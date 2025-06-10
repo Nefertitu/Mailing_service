@@ -1,0 +1,4 @@
+[tool.flake8]
+max-line-length = 119
+ignore = "E503, E121, E122, E501"
+exclude = ".git, __pycache__, .venv\, migrations"
