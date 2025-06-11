@@ -1,0 +1,22 @@
+{% extends 'catalog/base.html' %}
+{% block content %}
+<div class="container">
+    <form class="row" method="post" enctype="multipart/form-data">
+        <div class="col-lg-6 col-md-6 col-sm-12">
+            <div class="card mb-4 box-shadow">
+                <h2 class="fw-light mb-4">Редактировать профиль</h2>
+                <div class="card-body">
+                    {% csrf_token %}
+                    {{ form.non_field_errors }}
+                    {{ form.as_p }}
+                    <a href="{% url 'users:password_change' %}" class="btn btn-danger mt-3">Сменить пароль</a>
+                    <button type="submit" class="btn btn-primary mt-3">
+                        Сохранить изменения
+                    </button>
+                    <a class="p-2 btn btn-success mt-3" href="{% url 'catalog:product_list' %}">Отменить</a>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

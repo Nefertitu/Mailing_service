@@ -27,7 +27,7 @@ class User(AbstractUser):
         ('OTHER', 'Other country')
 
     ]
-    country = models.CharField(max_length=2, choices=COUNTRY_CHOICES, blank=True, null=True)
+    country = models.CharField(max_length=50, choices=COUNTRY_CHOICES, blank=True, null=True)
     token = models.CharField(max_length=100, verbose_name="Token", blank=True, null=True)
 
     USERNAME_FIELD = "email"

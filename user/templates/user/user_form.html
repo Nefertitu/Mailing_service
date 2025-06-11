@@ -1,0 +1,29 @@
+{% extends 'catalog/base.html' %}
+{% block content %}
+<div class="container">
+    <form class="row" method="post" enctype="multipart/form-data">
+        <div class="col-lg-6 col-md-6 col-sm-12">
+            <div class="card mb-4 box-shadow">
+                {% if object %}
+                <h2 class="fw-light mb-4">Редактировать профиль</h2>
+                {% else %}
+                <h2 class="fw-light mb-4">Регистрация</h2>
+                {% endif %}
+                <div class="card-body">
+                    {% csrf_token %}
+                    {{ form.non_field_errors }}
+                    {{ form.as_p }}
+                    <button type="submit" class="btn btn-primary">
+                        {% if object %}
+                        Сохранить изменения
+                        {% else %}
+                        Зарегистрироваться
+                        {% endif %}
+                    </button>
+                    <a class="p-2 btn btn-success" href="{% url 'catalog:product_list' %}">Отменить</a>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

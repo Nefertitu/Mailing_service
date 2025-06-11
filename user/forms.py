@@ -38,4 +38,4 @@ class CustomPasswordChangeForm(StyleFormMixin, PasswordChangeForm):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Инициализация формы"""
-        super().__init__(*args, **kwargs)
+        super().__init__(**kwargs)
