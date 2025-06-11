@@ -31,7 +31,7 @@ class MailingRecipient(models.Model):
         null=True,
     )
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Строковое отображение получателя рассылки"""
         return f"Получатель рассылки: {self.email}"
 
@@ -40,3 +40,32 @@ class MailingRecipient(models.Model):
         verbose_name_plural = "получатели"
         ordering = ["email"]
 
+
+class Message(models.Model):
+    """Модель сообщения"""
+
+    title = models.CharField(
+        max_length=200,
+        verbose_name="Тема письма",
+        help_text="Введите тему письма",
+    )
+    body = models.TextField(
+        verbose_name="Тело письма",
+        blank=True,
+        null=True,
+    )
+    owner = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="messages",
+        help_text="Владелец(Пользователь)"
+    )
+
+    def __str__(self) -> str:
+        """Строковое отображение сообщения"""
+        return f"Тема сообщения: '{self.title}'"
+
+    class Meta:
+        verbose_name = "сообщение"
+        verbose_name_plural = "сообщения"
+        ordering = ["title"]
