@@ -69,3 +69,61 @@ class Message(models.Model):
         verbose_name = "сообщение"
         verbose_name_plural = "сообщения"
         ordering = ["title"]
+
+
+class Mailing(models.Model):
+    """Модель рассылки"""
+
+    CREATED = "Создана"
+    LAUNCHED = "Запущена"
+    COMPLETED = "Завершена"
+
+    MAILING_CHOICES = [
+        (CREATED, "Создана"),
+        (LAUNCHED, "Запущена"),
+        (COMPLETED, "Завершена"),
+    ]
+
+    start_at = models.DateTimeField(
+        verbose_name="Дата и время первой отправки",
+        help_text="Дата и время начала отправки рассылки"
+    )
+    end_at = models.DateTimeField(
+        verbose_name="Дата и время окончания отправки",
+        blank=True,
+        null=True,
+        help_text="Необязательно. Если указано, рассылка прекратится после этой даты."
+    )
+    status = models.CharField(
+        max_length=50,
+        choices=MAILING_CHOICES,
+        verbose_name="Статус рассылки",
+        default=CREATED,
+    )
+    message = models.ForeignKey(
+        Message,
+        on_delete=models.CASCADE,
+        related_name="mailings",
+    )
+    recipients = models.ManyToManyField(
+        "MailingRecipient",
+        related_name="received_mailings",
+        symmetrical=False,
+        verbose_name="Получатели рассылки",
+    )
+    owner = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="created_mailings",
+        help_text="Владелец(Пользователь)"
+    )
+
+    def __str__(self):
+        message = Message.objects.get(self)
+        message_title = message.title
+        return f"Рассылка сообщения '{message_title}' (старт: {self.start_at}, завершение: {self.end_at})"
+
+    class Meta:
+        ordering = ["owner", "start_at", "end_at"]
+
+
