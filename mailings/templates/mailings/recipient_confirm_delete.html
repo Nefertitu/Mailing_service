@@ -1,0 +1,29 @@
+{% extends 'mailings/base.html' %}
+
+{% block title %}
+<h5>Удаление получателя рассылок</h5>
+{% endblock %}
+
+{% block content %}
+    <div class="container">
+        <div class="row text-start">
+            <div class="col-lg-6 col-md-6 col-sm-12">
+                <form class="row" method="post" enctype="multipart/form-data">
+                    <div class="card mb-4 box-shadow">
+                        <h5 class="card-text mb-3">Действительно хотите удалить клиента:</h5>
+                        <p>Email получателя рассылок: '{{ object.email }}'</p>
+                        <p>Ф.И.О. получателя рассылок: {{ object.fullname }}</p>
+                        <div class="card-body">
+                            {% csrf_token %}
+                            <div class="btn-group">
+                                <button type="submit" class="p-2 btn btn-outline-danger" href="{% url 'mailings:recipient_list' %}">Удалить клиента</button>
+                                <a class="p-2 btn btn-outline-success" href="{% url 'mailings:recipient_list' %}">Отменить</a>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}

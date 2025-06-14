@@ -1,13 +1,15 @@
 {% extends 'mailings/base.html' %}
 {% block content %}
+
 <div class="container">
     <form class="row" method="post" enctype="multipart/form-data">
         <div class="col-lg-6 col-md-6 col-sm-12">
             <div class="card mb-4 box-shadow">
                 {% if object %}
-                <h2 class="fw-light mb-4">Редактировать профиль</h2>
+                <h5 class="fw-light mt-3 mb-2 text-center">Редактировать данные получателя рассылок:</h5>
+                <p class="fw-light mb-2 text-center">{{ object.email }}</p>
                 {% else %}
-                <h2 class="fw-light mb-4">Регистрация</h2>
+                <h5 class="ffw-light mt-3 mb-2 text-center">Добавить получателя рассылок</h5>
                 {% endif %}
                 <div class="card-body">
                     {% csrf_token %}
@@ -17,10 +19,10 @@
                         {% if object %}
                         Сохранить изменения
                         {% else %}
-                        Зарегистрироваться
+                        Добавить клиента
                         {% endif %}
                     </button>
-                    <a class="p-2 btn btn-success" href="#">Отменить</a>
+                    <a class="p-2 btn btn-success" href="{% url 'mailings:recipient_list' %}">Отменить</a>
                 </div>
             </div>
         </div>

@@ -3,7 +3,7 @@ from django.db import models
 from user.models import User
 
 
-class MailingRecipient(models.Model):
+class Recipient(models.Model):
     """Модель получателя рассылки"""
 
     email = models.CharField(
@@ -106,7 +106,7 @@ class Mailing(models.Model):
         related_name="mailings",
     )
     recipients = models.ManyToManyField(
-        "MailingRecipient",
+        "Recipient",
         related_name="received_mailings",
         symmetrical=False,
         verbose_name="Получатели рассылки",

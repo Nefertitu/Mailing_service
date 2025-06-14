@@ -1,0 +1,55 @@
+{% extends 'mailings/base.html' %}
+
+{% block content %}
+{% block title %}
+<h5 class="text-center mb-4">Полный список клиентов (получателей рассылки)</h5>
+<hr class="border-primary border-2 me-2">
+{% endblock %}
+<a href="{% url 'mailings:recipient_form' %}" class="btn btn-primary">Добавить получателя рассылок</a>
+
+<div class="album py-2 bg-body-tertiary">
+    <div class="container">
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
+            <table class="table">
+                <thead>
+                <tr class="border-top border-primary border-bottom">
+                    <th class="table-primary sticky-top border-0 ">Email клиента</th>
+                    <th class="table-primary sticky-top border-0">Ф.И.О.</th>
+                    <th class="table-primary sticky-top border-0">Комментарий</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for object in object_list %}
+                <tr class="border-top border-bottom border-success">
+                    <td class="border-0">
+                    <a href="{% url 'mailings:recipient_detail' object.pk %}" class="btn">{{ object.email|lower }}</a>
+                    </td>
+                    <td class="border-0">{{ object.fullname }}</td>
+                    <td class="border-0">{{ object.comment|truncatechars:50 }}</td>
+                </tr>
+                <div class="d-flex justify-content-between align-items-center">
+                </div>
+                {% endfor %}
+                </tbody>
+            </table>
+
+            {% if is_paginated and page_obj.paginator.num_pages > 1 %}
+            <div class="d-flex justify-content-end mt-5">
+                <div class="btn-group">
+                    {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-primary"><-Назад</a>
+                    {% else %}
+                    <span class="btn btn-secondary"><-Назад</span>
+                    {% endif %}
+                    {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}" class="btn btn-primary">Вперед-></a>
+                    {% else %}
+                    <span class="btn btn-secondary">Вперед-></span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
