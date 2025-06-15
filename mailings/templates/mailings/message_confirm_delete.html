@@ -1,26 +1,23 @@
 {% extends 'mailings/base.html' %}
 
-
-<h5>Удаление получателя рассылок</h5>
-
 {% block content %}
 <div class="container">
     <div class="row text-start">
         <div class="col-lg-6 col-md-6 col-sm-12">
             <form class="row" method="post" enctype="multipart/form-data">
                 <div class="card mb-3 box-shadow">
-                    <h5 class="fw-light mt-3 mb-2 text-center text-danger">Удаление получателя рассылок:</h5>
-                    <h6 class="card-text mb-5 mt-5 ms-2">Действительно хотите удалить клиента?</h6>
-                    <p class="ms-2">Email получателя рассылок: '{{ object.email }}'</p>
-                    <p class="ms-2">Ф.И.О. получателя рассылок: {{ object.fullname }}</p>
+                    <h5 class="fw-light mt-3 mb-2 text-center text-danger">Удаление сообщения:</h5>
+                    <h6 class="card-text mb-5 mt-5 ms-2">Действительно хотите удалить сообщение?</h6>
+                    <p class="ms-2">Заголовок сообщения: '{{ object.title }}'</p>
+                    <p class="ms-2">Teкст сообщения: {{ object.body|truncatechars:100 }}</p>
                     <div class="card-body ">
                         {% csrf_token %}
                         <div class="btn-group mb-3">
                             <button type="submit" class="p-2 btn btn-outline-danger"
-                                    href="{% url 'mailings:recipient_list' %}">Удалить клиента
+                                    href="{% url 'mailings:message_list' %}">Удалить сообщение
                             </button>
                             <a class="p-2 btn btn-outline-success"
-                               href="{% url 'mailings:recipient_list' %}">Отменить</a>
+                               href="{% url 'mailings:message_list' %}">Отменить</a>
                         </div>
                     </div>
                 </div>

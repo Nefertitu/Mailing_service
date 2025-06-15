@@ -101,7 +101,8 @@
                 <div class="offcanvas-body">
                     <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
                         <li class="nav-item"><a class="nav-link active" aria-current="page" href="#">Главная</a></li>
-                        <li class="nav-item"><a class="nav-link" href="{% url 'mailings:recipient_list' %}">Список получателей рассылки</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'mailings:recipient_list' %}">Клиенты (получатели рассылки)</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'mailings:message_list' %}">Сообщения</a></li>
                         <li class="nav-item dropdown"><a class="nav-link dropdown-toggle" href="#" role="button"
                                                          data-bs-toggle="dropdown" aria-expanded="false">
                             Dropdown
@@ -127,7 +128,7 @@
 
     {% include 'mailings/includes/inc_menu.html' %}
     <div class="container my-5">
-        <div class="bg-body-tertiary p-5 rounded">
+        <div class="bg-body-tertiary p-3 rounded">
             <div class="col-sm-8 py-4 mx-auto"><h1 class="display-5 fw-normal text-center">Mailing Service</h1>
                 <p class="fs-5 text-center">Добро пожаловать в приложение Mailing Service !</p>
                 <p class="fs-5 text-center">Сервис управления рассылками, администрирования и статистики.</p>

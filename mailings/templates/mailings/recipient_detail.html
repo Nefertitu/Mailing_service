@@ -1,10 +1,7 @@
 {%extends 'mailings/base.html' %}
 
-{% block title %}
-<h5>Карточка клиента (получателя рассылок)</h5>
-{% endblock %}
-
 {% block content %}
+<h5 class="text-start ps-5">Карточка клиента (получателя рассылок)</h5>
 <div class="album py-5 bg-body-tertiary">
     <div class="container">
         <div class="row">
@@ -36,8 +33,8 @@
                             <div class="d-flex justify-content-between align-items-center">
                                 <div class="btn-group">
                                     <a class="p-2 btn btn-outline-success" href="{% url 'mailings:recipient_list' %}">Вернуться</a>
-                                    <a class="p-2 btn btn-outline-success" href="{% url 'mailings:recipient_update' object.pk %}">Редактировать</a>
-                                    <a class="p-2 btn btn-outline-success" href="{% url 'mailings:recipient_confirm_delete' object.pk %}">Удалить</a>
+                                    <a class="p-2 btn btn-outline-primary" href="{% url 'mailings:recipient_update' object.pk %}">Редактировать</a>
+                                    <a class="p-2 btn btn-outline-secondary" href="{% url 'mailings:recipient_confirm_delete' object.pk %}">Удалить</a>
                                 </div>
                             </div>
 <!--                    </div>-->
