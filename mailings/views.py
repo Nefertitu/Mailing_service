@@ -1,10 +1,15 @@
 from django.urls import reverse_lazy, reverse
+from django.views import View
 from django.views.generic import DetailView, ListView
 from django.views.generic.edit import CreateView, DeleteView, UpdateView
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpResponse
 
-from mailings.forms import RecipientForm, MessageForm
-from mailings.models import Recipient, Message, Mailing
+from mailings.forms import RecipientForm, MessageForm, MailingForm
+from mailings.models import Recipient, Message, Mailing, MailingAttempt
+from django.shortcuts import redirect, render
+from django.views.decorators.http import require_POST
+from django.core.management import call_command
+from django.contrib import messages
 
 
 class RecipientListView(ListView):
@@ -56,6 +61,7 @@ class MessageListView(ListView):
     """Класс для представления списка сообщений"""
 
     model = Message
+    paginate_by = 3
 
 
 class MessageCreateView(CreateView):
@@ -107,14 +113,25 @@ class MailingCreateView(CreateView):
     """Класс представления для добавления рассылок"""
 
     model = Mailing
-    form_class = MailingForm    #пока нет формы
+    form_class = MailingForm
     success_url = reverse_lazy("mailings:mailing_list")
 
-    def form_valid(self, form: RecipientForm) -> HttpResponse:
+    def form_valid(self, form:MailingForm) -> HttpResponse:
         """Обработка валидной формы - привязка рассылки к текущему пользователю"""
 
         form.instance.owner = self.request.user
         return super().form_valid(form)
+
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["select_all"] = True
+        all_recipients = Recipient.objects.all()
+        context["all_emails"] = ", ".join([recipient.email for recipient in all_recipients])
+        if context["select_all"] == "on":
+            context["recipients"] =  context["all_emails"]
+
+        return context
 
 
 class MailingDetailView(DetailView):
@@ -140,3 +157,50 @@ class MailingDeleteView(DeleteView):
 
     model = Mailing
     success_url = reverse_lazy("mailings:mailing_list")
+
+
+class MailingAttemptListView(ListView):
+    """Класс для представления списка попыток рассылок"""
+
+    model = MailingAttempt
+    paginate_by = 10
+
+
+class MailingAttemptDetailView(DetailView):
+    """Класс для детального отображения попытки рассылки"""
+
+    model = MailingAttempt
+
+
+class MailingAttemptDeleteView(DeleteView):
+    """Класс для удаления рассылки"""
+
+    model = MailingAttempt
+    success_url = reverse_lazy("mailings:mailingattempt_list")
+
+
+@require_POST
+def run_mailing_command(request):
+    """Вызов команды и отправка рассылок"""
+    if request.method == "POST":
+        try:
+            call_command("send_mailings")
+            messages.success(request, "Рассылка успешно отправлена!")
+        except Exception as e:
+            messages.error(request, f"Ошибка: {str(e)}")
+    return redirect(request.POST.get("next", "/"))
+
+
+class HomeView(View):
+    """Класс для отображения главной страницы"""
+
+    def get(self, request, *args, **kwargs):
+        """Получение контекста для отображения на главной странице"""
+
+        context = {
+            "attempts_all": MailingAttempt.objects.all().count(),
+            "attempts_successfully": (MailingAttempt.objects.filter(status=MailingAttempt.SUCCESSFULLY)).count(),
+            "recipients_all": Recipient.objects.all().count(),
+            "messages_all": Message.objects.all().count(),
+        }
+        return render(request, "mailings/home.html", context)

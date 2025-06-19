@@ -1,12 +1,12 @@
 {%extends 'mailings/base.html' %}
 
 {% block content %}
-<h5 class="text-start ps-5">Карточка клиента (получателя рассылок)</h5>
-<div class="album py-5 bg-body-tertiary">
+<h5 class="text-start ps-5">Карточка данных рассылки</h5>
+<div class="album py-4 bg-body-tertiary">
     <div class="container">
         <div class="row">
             <div class="col-md-6">
-                <div class="card shadow-sm border-end-3 border-bottom-3 border-info border-start-0 border-top-0">
+                <div class="card shadow-sm">
                     <div class="card-body">
                         <table class="table">
                             <thead>
@@ -17,24 +17,32 @@
                             </thead>
                             <tbody>
                             <tr class="border-top border-bottom border-grey">
-                                <td class="border-0">Ф.И.О. клиента</td>
-                                <td class="border-0">{{ object.fullname|title }}</td>
+                                <td class="border-0">Название рассылки (сообщения)</td>
+                                <td class="border-0">{{ object.message }}</td>
                             </tr>
                             <tr class="border-top border-bottom border-grey">
-                                <td class="border-0">Email клиента</td>
-                                <td class="border-0">{{ object.email|lower }}</td>
+                                <td class="border-0">Статус рассылки</td>
+                                <td class="border-0">{{ object.status }}</td>
                             </tr>
                             <tr class="border-top border-bottom border-grey">
-                                <td class="border-0">Комментарий</td>
-                                <td class="border-0">{{ object.comment }}</td>
+                                <td class="border-0">Дата и время первой отправки</td>
+                                <td class="border-0">{{ object.start_at|date:"d.m.Y (H:i)" }}</td>
+                            </tr>
+                            <tr class="border-top border-bottom border-grey">
+                                <td class="border-0">Дата и время окончания отправки</td>
+                                <td class="border-0">{{ object.end_at|date:"d.m.Y (H:i)" }}</td>
+                            </tr>
+                            <tr class="border-top border-bottom border-grey">
+                                <td class="border-0">Получатели рассылки</td>
+                                <td class="border-0">{{ object.get_recipients_display }}</td>
                             </tr>
                             </tbody>
                              </table>
                             <div class="d-flex justify-content-between align-items-center">
                                 <div class="btn-group">
-                                    <a class="p-2 btn btn-outline-success" href="{% url 'mailings:recipient_list' %}">Вернуться</a>
-                                    <a class="p-2 btn btn-outline-primary" href="{% url 'mailings:recipient_update' object.pk %}">Редактировать</a>
-                                    <a class="p-2 btn btn-outline-secondary" href="{% url 'mailings:recipient_confirm_delete' object.pk %}">Удалить</a>
+                                    <a class="p-2 btn btn-outline-success" href="{% url 'mailings:mailing_list' %}">Вернуться</a>
+                                    <a class="p-2 btn btn-outline-primary" href="{% url 'mailings:mailing_update' object.pk %}">Редактировать</a>
+                                    <a class="p-2 btn btn-outline-secondary" href="{% url 'mailings:mailing_confirm_delete' object.pk %}">Удалить</a>
                                 </div>
                             </div>
 <!--                    </div>-->

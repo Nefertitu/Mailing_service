@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 
 from user.models import User
 
@@ -33,7 +34,7 @@ class Recipient(models.Model):
 
     def __str__(self) -> str:
         """Строковое отображение получателя рассылки"""
-        return f"Получатель рассылки: {self.email}"
+        return self.email
 
     class Meta:
         verbose_name = "получатель"
@@ -63,7 +64,7 @@ class Message(models.Model):
 
     def __str__(self) -> str:
         """Строковое отображение сообщения"""
-        return f"Тема сообщения: '{self.title}'"
+        return f"Тема: '{self.title}'"
 
     class Meta:
         verbose_name = "сообщение"
@@ -78,7 +79,7 @@ class Mailing(models.Model):
     LAUNCHED = "Запущена"
     COMPLETED = "Завершена"
 
-    MAILING_CHOICES = [
+    STATUS_CHOICES = [
         (CREATED, "Создана"),
         (LAUNCHED, "Запущена"),
         (COMPLETED, "Завершена"),
@@ -86,7 +87,7 @@ class Mailing(models.Model):
 
     start_at = models.DateTimeField(
         verbose_name="Дата и время первой отправки",
-        help_text="Дата и время начала отправки рассылки"
+        help_text="Введите дату и время в формате: 'гггг-мм-дд чч-мм'",
     )
     end_at = models.DateTimeField(
         verbose_name="Дата и время окончания отправки",
@@ -96,13 +97,14 @@ class Mailing(models.Model):
     )
     status = models.CharField(
         max_length=50,
-        choices=MAILING_CHOICES,
+        choices=STATUS_CHOICES,
         verbose_name="Статус рассылки",
         default=CREATED,
     )
     message = models.ForeignKey(
         Message,
         on_delete=models.CASCADE,
+        null=False,
         related_name="mailings",
     )
     recipients = models.ManyToManyField(
@@ -118,12 +120,80 @@ class Mailing(models.Model):
         help_text="Владелец(Пользователь)"
     )
 
-    def __str__(self):
-        message = Message.objects.get(self)
-        message_title = message.title
-        return f"Рассылка сообщения '{message_title}' (старт: {self.start_at}, завершение: {self.end_at})"
+    def __str__(self) -> str:
+        """Строковое отображение рассылки"""
+        return f"Рассылка сообщения '{self.message.title}' (старт: {self.start_at}, завершение: {self.end_at})"
 
     class Meta:
-        ordering = ["owner", "start_at", "end_at"]
+        ordering = ["start_at", "end_at"]
 
+    def get_recipients_display(self):
+        return ", ".join([recipient.email for recipient in self.recipients.all()])
+
+    def get_message_title(self):
+        """Оптимизированная версия без лишних проверок"""
+        return self.message.title
+
+    def send_emails(self):
+        """Отправка писем и ручной переход в LAUNCHED"""
+        if self.status == self.CREATED:
+            self.status = self.LAUNCHED
+            self.start_at = timezone.now()
+            self.save()
+
+    def update_status(self):
+        """Автоматическое обновление статуса рассылки"""
+        now = timezone.now()
+
+        if self.status == self.LAUNCHED and self.end_at and self.end_at <= now:
+            self.status = self.COMPLETED
+            self.save()
+
+
+class MailingAttempt(models.Model):
+    """Модель попытка рассылки"""
+
+    SUCCESSFULLY = "Успешно"
+    UNSUCCESSFUL = "Не успешно"
+
+    ATTEMPT_CHOICES = [
+        (SUCCESSFULLY, "Успешно"),
+        (UNSUCCESSFUL, "Не успешно"),
+    ]
+
+    datetime_attempt = models.DateTimeField(
+        verbose_name="Дата и время попытки",
+       auto_now_add=True,
+    )
+    status = models.CharField(
+        max_length=50,
+        choices=ATTEMPT_CHOICES,
+        verbose_name="Статус рассылки",
+        default=None,
+    )
+    server_response = models.TextField(
+        verbose_name="Ответ почтового сервера",
+        blank=True,
+        null=True,
+        help_text="Ответ почтового сервера на отправку"
+    )
+    mailing = models.ForeignKey(
+        Mailing,
+        on_delete=models.CASCADE,
+        null=False,
+        related_name="attempts",
+        verbose_name="Рассылка",
+        help_text="Связанная рассылка"
+    )
+
+    def __str__(self)  -> str:
+        """Строковое отображение попытки рассылки"""
+        return f"Попытка рассылки #{self.pk} ({self.mailing.message.title})"
+
+    class Meta:
+        ordering = ["datetime_attempt"]
+
+    def get_message_title(self):
+        """Возвращает строку с темой сообщения"""
+        return self.mailing.message.title
 

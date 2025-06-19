@@ -1,8 +1,7 @@
 from typing import Any
 
 from django import forms
-from django.forms import BooleanField, ChoiceField
-from django.views.generic.base import ContextMixin
+from django.forms import BooleanField, ChoiceField, ModelMultipleChoiceField
 
 
 class StyleFormMixin(forms.Form):
@@ -13,8 +12,9 @@ class StyleFormMixin(forms.Form):
         super().__init__(*args, **kwargs)
 
         for fild_name, fild in self.fields.items():
-            if isinstance(fild, BooleanField):
-                fild.widget.attrs["class"] = "form-check-input"
+            if isinstance(fild, (forms.BooleanField, forms.ModelMultipleChoiceField)):
+                fild.widget.attrs["class"] = "form-check-input",
+                fild.widget.attrs["wrapper-class"] = "form-check form-check-inline",
             elif isinstance(fild, ChoiceField):
                 fild.widget.attrs["class"] = "form-select"
             else:

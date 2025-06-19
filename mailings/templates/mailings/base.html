@@ -100,9 +100,15 @@
                 </div>
                 <div class="offcanvas-body">
                     <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
-                        <li class="nav-item"><a class="nav-link active" aria-current="page" href="#">Главная</a></li>
-                        <li class="nav-item"><a class="nav-link" href="{% url 'mailings:recipient_list' %}">Клиенты (получатели рассылки)</a></li>
-                        <li class="nav-item"><a class="nav-link" href="{% url 'mailings:message_list' %}">Сообщения</a></li>
+                        <li class="nav-item"><a class="nav-link active" aria-current="page" href="{% url 'mailings:home' %}">Главная</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'mailings:recipient_list' %}">Клиенты
+                            (получатели рассылки)</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'mailings:message_list' %}">Сообщения</a>
+                        </li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'mailings:mailing_list' %}">Рассылки</a>
+                        </li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'mailings:mailingattempt_list' %}">Попытки
+                            рассылок</a></li>
                         <li class="nav-item dropdown"><a class="nav-link dropdown-toggle" href="#" role="button"
                                                          data-bs-toggle="dropdown" aria-expanded="false">
                             Dropdown
@@ -137,7 +143,7 @@
             {% block content %}
             {% endblock %}
             {% if "login" in path %}
-             <p><a class="btn btn-primary" href="#" role="button">Регистрация</a></p>
+            <p><a class="btn btn-primary" href="#" role="button">Регистрация</a></p>
             {% endif %}
         </div>
 
