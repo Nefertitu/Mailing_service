@@ -2,7 +2,8 @@
 
 {% block content %}
 <div class="container">
-    <h4 class="fw-light mb-5 text-center">Статистика и отчеты</h4>
+    <h4 class="fw-light text-center text-info">Статистика и отчеты</h4>
+    <h5 class="fw-light mb-5 text-center ">Данные по состоянию на текущую дату: {{ datetime_now|date:"d.m.Y года (H:i МСК)" }}</h5>
     <div class="row justify-content-center">
         <div class="col-lg-9 col-md-9 col-sm-12">
             <table class="table">

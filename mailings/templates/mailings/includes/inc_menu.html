@@ -1,17 +1,17 @@
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark" aria-label="Offcanvas navbar large">
     <div class="container-fluid"><a class="navbar-brand" href="#">Mailings Service</a>
-<form method="post" action="{% url 'mailings:run_mailing' %}">
-    {% csrf_token %}
-    <input type="hidden" name="next" value="{{ request.path }}">
-    <button type="submit" class="btn btn-primary me-3">Запустить рассылку</button>
-</form>
+        <form method="post" action="{% url 'mailings:run_mailing' %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <button type="submit" class="btn btn-primary me-3">Запустить рассылку</button>
+        </form>
         {% if messages %}
-    <div class="alert alert-info me-3 mt-3">
-        {% for message in messages %}
+        <div class="alert alert-info me-3 mt-3">
+            {% for message in messages %}
             -->>{{ message }}
-        {% endfor %}
-    </div>
-{% endif %}
+            {% endfor %}
+        </div>
+        {% endif %}
         <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar2"
                 aria-controls="offcanvasNavbar2" aria-label="Toggle navigation"><span
                 class="navbar-toggler-icon"></span></button>
@@ -23,19 +23,29 @@
             </div>
             <div class="offcanvas-body">
                 <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
-                    <li class="nav-item"><a class="nav-link active" aria-current="page" href="#">Главная</a></li>
+                    <li class="nav-item"><a class="nav-link active" aria-current="page" href="{% url 'mailings:home' %}">Главная</a></li>
                     <li class="nav-item"><a class="nav-link" href="#">Link</a></li>
                     <li class="nav-item dropdown"><a class="nav-link dropdown-toggle" href="#" role="button"
                                                      data-bs-toggle="dropdown" aria-expanded="false">
-                        Dropdown
+                        Создать элемент
                     </a>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#">Action</a></li>
-                            <li><a class="dropdown-item" href="#">Another action</a></li>
-                            <li>
-                                <hr class="dropdown-divider">
+                            <li class="w-100">
+                                <a href="{% url 'mailings:recipient_form' %}" class="btn btn-outline-primary">Добавить
+                                    получателя</a>
                             </li>
-                            <li><a class="dropdown-item" href="#">Something else here</a></li>
+                            <br>
+                            <li class="w-100">
+                                <a href="{% url 'mailings:message_form' %}" class="btn btn-outline-success">Создать
+                                    сообщение</a>
+                            </li>
+                            <br>
+                            <li class="w-100">
+                                <a href="{% url 'mailings:mailing_form' %}" class="btn btn-outline-info">Добавить
+                                    рассылку</a>
+
+                            </li>
+                            <br>
                         </ul>
                     </li>
                 </ul>

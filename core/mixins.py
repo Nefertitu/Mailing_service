@@ -1,7 +1,7 @@
 from typing import Any
 
 from django import forms
-from django.forms import BooleanField, ChoiceField, ModelMultipleChoiceField
+from django.forms import ChoiceField
 
 
 class StyleFormMixin(forms.Form):

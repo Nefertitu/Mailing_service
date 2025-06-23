@@ -8,7 +8,7 @@
             <table class="table">
                 <thead>
                 <tr class="border-top border-primary border-bottom">
-                    <th class="table-primary sticky-top border-0 ps-3">Тема рассылки</th>
+                    <th class="table-primary sticky-top border-0 ps-3">Тема рассылки(*)</th>
                     <th class="table-primary sticky-top border-0">Дата и время отправки</th>
                     <th class="table-primary sticky-top border-0">Статус</th>
                     <th class="table-primary sticky-top border-0">Ответ сервера</th>
@@ -29,11 +29,16 @@
                 {% endfor %}
                 </tbody>
             </table>
+            {% if total_count > 20 %}
+                <p>* - Показаны последние 20  из {{ total_count }} записей</p>
+            {% elif total_count > 0 %}
+                <p>* - Отображаются все {{ total_count }} записей</p>
+            {% endif %}
         </div>
     </div>
 </div>
 {% if is_paginated and page_obj.paginator.num_pages > 1 %}
-<div class="d-flex justify-content-end mt-5">
+<div class="d-flex justify-content-end mt-2">
     <div class="btn-group">
         {% if page_obj.has_previous %}
         <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-primary"><-Назад</a>

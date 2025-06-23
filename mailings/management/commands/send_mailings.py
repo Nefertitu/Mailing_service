@@ -1,12 +1,14 @@
-import os
+import logging
 from typing import Any
 
-from django.core.mail import send_mail
 from django.core.management.base import BaseCommand
 from django.db import models
 from django.utils import timezone
 
-from mailings.models import Mailing, MailingAttempt
+from mailings.models import Mailing
+
+
+logger = logging.getLogger("mailings")
 
 
 class Command(BaseCommand):
@@ -15,7 +17,7 @@ class Command(BaseCommand):
     help = "Тестовая рассылка"
 
     def handle(self, *args: Any, **options: Any) -> None:
-        """Основной метод выполнения команды. """
+        """Основной метод выполнения команды"""
 
         time_now = timezone.now()
 
@@ -28,45 +30,39 @@ class Command(BaseCommand):
                 status=Mailing.LAUNCHED,
                 end_at__gte=time_now
             )
-        )
+        ).select_related("message").prefetch_related("recipients")
 
-        if not active_mailings:
-            self.stdout.write("No active mailings found")
+        if not active_mailings.exists():
+            self.stdout.write(self.style.WARNING("Нет активных рассылок для отправки"))
+            return
+        self.stdout.write(f"Найдено {active_mailings.count()} активных рассылок:")
 
         for mailing in active_mailings:
-            self.stdout.write(f"Processing mailing ID: {mailing.pk}")
-            recipients = mailing.recipients.all()
-            message = mailing.message
+            self.stdout.write(f"\n--- Рассылка по ID: {mailing.pk} ---")
+            self.stdout.write(f"Тема: {mailing.message.title if mailing.message else 'Без темы'}")
+            self.stdout.write(f"Получателей: {mailing.recipients.count()}")
 
-            if mailing.status in [mailing.COMPLETED]:
-                return
+            if not mailing.prepare_for_sending():
+                self.stdout.write(self.style.WARNING("Рассылка уже завершена"))
+                continue
 
-            if mailing.status == mailing.CREATED:
-                mailing.status = mailing.LAUNCHED
-                mailing.start_at = timezone.now()
-                mailing.save()
+            results = mailing.send_emails()
 
-            for recipient in recipients:
-                try:
-                    send_mail(
-                        subject=message.title,
-                        message=message.body,
-                        from_email=os.getenv("EMAIL_HOST_USER"),
-                        recipient_list=[recipient.email],
-                        fail_silently=False
-                    )
-                    MailingAttempt.objects.create(
-                        mailing=mailing,
-                        status=MailingAttempt.SUCCESSFULLY,
-                        server_response=f"Successfully send to {recipient.email}"
-                    )
-                    self.stdout.write(f"Successfully send to {recipient.email}")
-                except Exception as e:
-                    error_msg = str(e)
-                    MailingAttempt.objects.create(
-                        mailing=mailing,
-                        status=MailingAttempt.UNSUCCESSFUL,
-                        server_response=error_msg
-                    )
-                    self.stdout.write(f"Failed to send to {recipient.email}: {error_msg}")
-        self.stdout.write("Finished processing all active mailings")
+            self.stdout.write(self.style.SUCCESS(
+                f"Успешно отправлено: {results['success']}/{results['total']}"
+            ))
+
+            if results['errors']:
+                self.stdout.write(self.style.ERROR(
+                    f"Ошибки ({len(results['errors'])}):"
+                ))
+                for error in results['errors'][:3]:
+                    self.stdout.write(f"  • {error}")
+
+                logger.error(f"Ошибки при отправке рассылки {mailing.pk}:")
+                for error in results['errors']:
+                    logger.error(error)
+
+        self.stdout.write(self.style.SUCCESS(
+            f"\nОбработка завершена. Всего обработано рассылок: {active_mailings.count()}"
+        ))

@@ -40,6 +40,9 @@ class MailingForm(StyleFormMixin, ModelForm):
         exclude = [
             "owner",
         ]
+        widgets = {
+            'next_run': forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M')
+        }
 
     def clean(self):
         cleaned_data = super().clean()

@@ -1,4 +1,10 @@
+import logging
+from typing import Any
+
+from django.db import models
+from django.db.models import QuerySet
 from django.urls import reverse_lazy, reverse
+from django.utils import timezone
 from django.views import View
 from django.views.generic import DetailView, ListView
 from django.views.generic.edit import CreateView, DeleteView, UpdateView
@@ -10,6 +16,9 @@ from django.shortcuts import redirect, render
 from django.views.decorators.http import require_POST
 from django.core.management import call_command
 from django.contrib import messages
+
+
+logger = logging.getLogger("mailings")
 
 
 class RecipientListView(ListView):
@@ -108,6 +117,14 @@ class MailingListView(ListView):
 
     model = Mailing
 
+    def get_queryset(self):
+        """Обновление статуса рассылок"""
+
+        queryset = super().get_queryset()
+        for mailing in queryset:
+            mailing.update_status()
+        return queryset
+
 
 class MailingCreateView(CreateView):
     """Класс представления для добавления рассылок"""
@@ -124,6 +141,8 @@ class MailingCreateView(CreateView):
 
 
     def get_context_data(self, **kwargs):
+        """Добавляет данные в контекст"""
+
         context = super().get_context_data(**kwargs)
         context["select_all"] = True
         all_recipients = Recipient.objects.all()
@@ -135,9 +154,41 @@ class MailingCreateView(CreateView):
 
 
 class MailingDetailView(DetailView):
-    """Класс для детального отображения данных рассылки"""
+    """Класс для детального отображения данных рассылки
+    и обработка отправки"""
 
     model = Mailing
+
+
+    def post(self, request, *args: Any, **kwargs: Any):
+        """Обработка отправки рассылки"""
+
+        mailing = self.get_object()
+        time_now = timezone.now()
+
+        is_active = Mailing.objects.filter(
+            models.Q(
+                start_at__lte=time_now,
+                end_at__gte=time_now,
+                status=Mailing.CREATED
+            ) | models.Q(
+                status=Mailing.LAUNCHED,
+                end_at__gte=time_now
+            ),
+        pk=mailing.pk
+        ).exists()
+
+        if not is_active:
+            messages.error(request, "Эта рассылка не активна (неверный статус или даты)")
+            logger.warning(request, "Эта рассылка не активна (неверный статус или даты)")
+            return redirect('mailings:mailing_detail', pk=mailing.pk)
+
+        mailing.send()
+        mailing.update_status()
+        messages.success(request, f"Рассылка '{mailing.message.title}' отправлена!")
+        logger.info(f"Рассылка '{mailing.message.title}' успешно отправлена!")
+
+        return redirect('mailings:mailing_detail', pk=mailing.pk)
 
 
 class MailingUpdateView(UpdateView):
@@ -164,6 +215,18 @@ class MailingAttemptListView(ListView):
 
     model = MailingAttempt
     paginate_by = 10
+    ordering = ["-datetime_attempt", "pk"]
+
+    def get_queryset(self) -> QuerySet:
+        """Возвращает ограниченный queryset, содержащий только первые 20 записей"""
+        return super().get_queryset()[:20]
+
+    def get_context_data(self, **kwargs: Any) -> dict:
+        """Добавляет в контекст шаблона общее количество попыток рассылки"""
+
+        context = super().get_context_data(**kwargs)
+        context["total_count"] = MailingAttempt.objects.all().count()
+        return context
 
 
 class MailingAttemptDetailView(DetailView):
@@ -182,6 +245,7 @@ class MailingAttemptDeleteView(DeleteView):
 @require_POST
 def run_mailing_command(request):
     """Вызов команды и отправка рассылок"""
+
     if request.method == "POST":
         try:
             call_command("send_mailings")
@@ -194,7 +258,7 @@ def run_mailing_command(request):
 class HomeView(View):
     """Класс для отображения главной страницы"""
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args: Any, **kwargs: Any):
         """Получение контекста для отображения на главной странице"""
 
         context = {
@@ -202,5 +266,6 @@ class HomeView(View):
             "attempts_successfully": (MailingAttempt.objects.filter(status=MailingAttempt.SUCCESSFULLY)).count(),
             "recipients_all": Recipient.objects.all().count(),
             "messages_all": Message.objects.all().count(),
+            "datetime_now": timezone.now(),
         }
         return render(request, "mailings/home.html", context)

@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     "phonenumber_field",
     "crispy_forms",
     "crispy_bootstrap5",
+    "django_apscheduler",
 ]
 
 MIDDLEWARE = [
@@ -97,6 +98,7 @@ USE_I18N = True
 
 USE_TZ = True
 
+USE_DEPRECATED_PYTZ = False
 
 STATIC_URL = '/static/'
 
@@ -131,3 +133,35 @@ EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 LOGIN_URL = "user:login"
+
+LOG_DIR = BASE_DIR / 'logs'
+LOG_DIR.mkdir(exist_ok=True, mode=0o777)
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "mailing_format": {
+            "format": "[{asctime}] {levelname} - {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "mailing_file": {
+            "level": "DEBUG",
+            "class": "logging.FileHandler",
+            "filename": os.path.join(BASE_DIR, "logs", "mailing.log"),
+            "formatter": "mailing_format",
+        },
+    },
+    "loggers": {
+        "mailings": {
+            "handlers": ["mailing_file"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
+    },
+}
+
+log_dir = os.path.join(BASE_DIR, 'logs')
+os.makedirs(log_dir, exist_ok=True)

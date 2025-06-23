@@ -20,6 +20,7 @@ django-crispy-forms = "^2.4"
 crispy-bootstrap5 = "^2025.6"
 redis = "^6.2.0"
 unidecode = "^1.4.0"
+django-apscheduler = "^0.7.0"
 
 
 [tool.poetry.group.lint.dependencies]
