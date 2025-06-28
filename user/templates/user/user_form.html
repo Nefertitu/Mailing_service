@@ -1,4 +1,6 @@
 {% extends 'mailings/base.html' %}
+{% load i18n %}
+{% trans "test template string" %}
 {% block content %}
 <div class="container">
     <form class="row" method="post" enctype="multipart/form-data">
@@ -20,7 +22,7 @@
                         Зарегистрироваться
                         {% endif %}
                     </button>
-                    <a class="p-2 btn btn-success" href="#">Отменить</a>
+                    <a class="p-2 btn btn-success" href="{% url 'user:login' %}">Отменить</a>
                 </div>
             </div>
         </div>

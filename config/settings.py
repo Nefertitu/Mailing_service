@@ -14,6 +14,8 @@ DEBUG = True if os.getenv("DEBUG") == "True" else False
 
 ALLOWED_HOSTS = ['*']
 
+GETTEXT_BIN = r'C:\Program Files\gettext-iconv\bin'
+os.environ['PATH'] = f'{GETTEXT_BIN};{os.environ["PATH"]}'
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -46,7 +48,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -89,8 +91,9 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+LOCALE_PATHS = [os.path.join(BASE_DIR, 'locale')]
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'ru-ru'
 
 TIME_ZONE = 'Europe/Moscow'
 
@@ -116,8 +119,8 @@ CRISPY_TEMPLATE_PACK = "bootstrap5"
 
 AUTH_USER_MODEL = "user.User"
 
-LOGIN_REDIRECT_URL = "catalog:product_list"
-LOGOUT_REDIRECT_URL = "catalog:product_list"
+LOGIN_REDIRECT_URL = "mailings:home"
+LOGOUT_REDIRECT_URL = "user:login"
 
 AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",

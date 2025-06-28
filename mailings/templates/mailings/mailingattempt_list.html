@@ -18,7 +18,7 @@
                 {% for object in object_list %}
                 <tr class="border-top border-bottom border-success">
                     <td class="border-0">
-                        <a href="{% url 'mailings:mailingattempt_detail' object.pk %}" class="btn ps-2">{{object.mailing.message.title|default:"Без темы" }}</a>
+                        <a href="{% url 'mailings:mailingattempt_detail' object.pk %}" class="btn ps-2">{{ object.mailing.message.title }}</a>
                     </td>
                     <td class="border-0">{{ object.datetime_attempt|date:"d F Y H : i" }}</td>
                     <td class="border-0">{{ object.status }}</td>
@@ -30,28 +30,20 @@
                 </tbody>
             </table>
             {% if total_count > 20 %}
-                <p>* - Показаны последние 20  из {{ total_count }} записей</p>
+            <p>* - Показаны последние 20 из {{ total_count }} записей</p>
             {% elif total_count > 0 %}
-                <p>* - Отображаются все {{ total_count }} записей</p>
+            <p>* - Отображаются все {{ total_count }} записей</p>
             {% endif %}
         </div>
-    </div>
-</div>
-{% if is_paginated and page_obj.paginator.num_pages > 1 %}
-<div class="d-flex justify-content-end mt-2">
-    <div class="btn-group">
-        {% if page_obj.has_previous %}
-        <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-primary"><-Назад</a>
-        {% else %}
-        <span class="btn btn-secondary"><-Назад</span>
-        {% endif %}
-        {% if page_obj.has_next %}
-        <a href="?page={{ page_obj.next_page_number }}" class="btn btn-primary">Вперед-></a>
-        {% else %}
-        <span class="btn btn-secondary">Вперед-></span>
+        {% if empty_mailingattempts %}
+        <div class="alert alert-info">
+            {{ empty_mailingattempts }}
+        </div>
         {% endif %}
     </div>
 </div>
 
+{% if is_paginated and page_obj.paginator.num_pages > 1 %}
+{% include 'mailings/includes/pagination.html' %}
 {% endif %}
 {% endblock %}

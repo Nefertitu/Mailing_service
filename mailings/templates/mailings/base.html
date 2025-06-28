@@ -100,33 +100,56 @@
                 </div>
                 <div class="offcanvas-body">
                     <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
-                        <li class="nav-item"><a class="nav-link active" aria-current="page" href="{% url 'mailings:home' %}">Главная</a></li>
+                        {% if user.is_authenticated %}
+                        <li class="nav-item"><a class="nav-link active" aria-current="page"
+                                                href="{% url 'mailings:home' %}">Главная</a></li>
+                        <li class="nav-item">
+                            <form method="post" action="{% url 'user:logout' %}" style="display:inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-link nav">Выйти</button>
+                            </form>
+                            <form>
+                                <a href="{% url 'user:user_update' request.user.pk %}" class="btn btn-link nav">Редактировать
+                                    профиль</a>
+                            </form>
+                        </li>
                         <li class="nav-item"><a class="nav-link" href="{% url 'mailings:recipient_list' %}">Клиенты
                             (получатели рассылки)</a></li>
+                        {% if not request.user.is_manager %}
                         <li class="nav-item"><a class="nav-link" href="{% url 'mailings:message_list' %}">Сообщения</a>
                         </li>
+                        {% endif %}
                         <li class="nav-item"><a class="nav-link" href="{% url 'mailings:mailing_list' %}">Рассылки</a>
                         </li>
+                        {% if not request.user.is_manager %}
                         <li class="nav-item"><a class="nav-link" href="{% url 'mailings:mailingattempt_list' %}">Попытки
                             рассылок</a></li>
-                        <li class="nav-item dropdown"><a class="nav-link dropdown-toggle" href="#" role="button"
-                                                         data-bs-toggle="dropdown" aria-expanded="false">
-                            Dropdown
-                        </a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="#">Action</a></li>
-                                <li><a class="dropdown-item" href="#">Another action</a></li>
-                                <li>
-                                    <hr class="dropdown-divider">
-                                </li>
-                                <li><a class="dropdown-item" href="#">Something else here</a></li>
-                            </ul>
-                        </li>
+                        {% endif %}
+                        {% if request.user.is_manager %}
+                        <li class="nav-item"><a class="nav-link" href="{% url 'user:user_list' %}">Список пользователей
+                        </a></li>
+                        {% endif%}
                     </ul>
-                    <form class="d-flex mt-3" role="search"><input class="form-control me-2" type="search"
-                                                                   placeholder="Поиск" aria-label="Search">
-                        <button class="btn btn-outline-success" type="submit">Поиск</button>
-                    </form>
+                    {% else %}
+                    <li class="nav-item">
+                        <form method="post" action="{% url 'user:register' %}" style="display:inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-link nav">Регистрация</button>
+                        </form>
+                    </li>
+                    {% endif %}
+                    {% if not "start" in request.path %}
+                    <form class="d-flex mt-3 mt-lg-0" action="{% url 'mailings:search_result' %}" method="get">
+    <input class="form-control me-2"
+           type="search"
+           name="q"
+           placeholder="Поиск"
+           aria-label="Search"
+           required
+           minlength="3">
+                    <button class="btn btn-outline-success" type="submit">Поиск</button>
+                </form>
+                    {% endif %}
                 </div>
             </div>
         </div>

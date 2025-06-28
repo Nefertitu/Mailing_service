@@ -1,33 +1,40 @@
 {% extends 'mailings/base.html' %}
-
 {% block content %}
 <h5 class="text-center mb-4">Полный список рассылок</h5>
+{% if not user.is_manager %}
 <a href="{% url 'mailings:mailing_form' %}" class="btn btn-primary mt-3 mb-3 ms-2">Добавить новую рассылку</a>
+{% endif %}
 <div class="album py-2 bg-body-tertiary">
     <div class="container">
         <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
             <table class="table">
                 <thead>
                 <tr class="border-top border-primary border-bottom">
-                    <th class="table-primary sticky-top border-0 ps-3">Рассылка</th>
+                    <th class="table-primary sticky-top border-0 ps-3">Рассылка (ссылка)</th>
                     <th class="table-primary sticky-top border-0">Статус</th>
                     <th class="table-primary sticky-top border-0">Дата отправки</th>
                     <th class="table-primary sticky-top border-0">Дата окончания отправки</th>
                     <th class="table-primary sticky-top border-0">Получатели</th>
                     <th class="table-primary sticky-top border-0">Периодичность</th>
+                    {% if user.is_manager %}
+                    <th class="table-primary sticky-top border-0">is_active (True/False)</th>
+                    {% endif %}
                 </tr>
                 </thead>
                 <tbody>
                 {% for object in object_list %}
                 <tr class="border-top border-bottom border-success">
                     <td class="border-0">
-                        <a href="{% url 'mailings:mailing_detail' object.pk %}" class="btn ps-2">{{ object.message.title }}</a>
+                        <a href="{% url 'mailings:mailing_detail' object.pk %}" class="btn ps-2 text-start">{{ object.message.title }}</a>
                     </td>
                     <td class="border-0">{{ object.status }}</td>
                     <td class="border-0">{{ object.start_at|date:"d F Y H : i" }}</td>
                     <td class="border-0">{{ object.end_at|date:"d F Y H : i" }}</td>
                     <td class="border-0">{{ object.get_recipients_display|truncatechars:50 }}</td>
                     <td class="border-0">{{ object.get_periodic_display }}</td>
+                    {% if user.is_manager %}
+                    <td class="border-0">{{ object.is_active|yesno:"✅,❌" }}</td>
+                    {% endif %}
                 </tr>
                 <div class="d-flex justify-content-between align-items-center">
                 </div>
@@ -35,22 +42,15 @@
                 </tbody>
             </table>
         </div>
+         {% if empty_mailings %}
+        <div class="alert alert-info">
+            {{ empty_mailings }}
+        </div>
+        {% endif %}
     </div>
 </div>
-{% endblock %}
+
 {% if is_paginated and page_obj.paginator.num_pages > 1 %}
-<div class="d-flex justify-content-end mt-5">
-    <div class="btn-group">
-        {% if page_obj.has_previous %}
-        <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-primary"><-Назад</a>
-        {% else %}
-        <span class="btn btn-secondary"><-Назад</span>
-        {% endif %}
-        {% if page_obj.has_next %}
-        <a href="?page={{ page_obj.next_page_number }}" class="btn btn-primary">Вперед-></a>
-        {% else %}
-        <span class="btn btn-secondary">Вперед-></span>
-        {% endif %}
-    </div>
-</div>
+{% include 'mailings/includes/pagination.html' %}
 {% endif %}
+{% endblock %}

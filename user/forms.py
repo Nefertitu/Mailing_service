@@ -1,7 +1,8 @@
 from typing import Any
 
 from django.contrib.auth.forms import PasswordChangeForm, UserChangeForm, UserCreationForm
-
+from django.core.exceptions import ValidationError
+from django.forms import ModelForm
 from core.mixins import StyleFormMixin
 
 from .models import User
@@ -13,6 +14,15 @@ class CustomUserCreationForm(StyleFormMixin, UserCreationForm):
     class Meta:
         model = User
         fields = ("email", "password1", "password2")
+        error_messages = {
+            "email": {
+               "required": "Email обязателен для регистрации",
+                "unique": "Пользователь с таким Email уже существует",
+            },
+            "password1":{
+                "required": "Это поле обязательно к заполнению",
+            },
+        }
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Инициализация формы"""
@@ -39,3 +49,11 @@ class CustomPasswordChangeForm(StyleFormMixin, PasswordChangeForm):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Инициализация формы"""
         super().__init__(**kwargs)
+
+
+class UserManagerForm(StyleFormMixin, ModelForm):
+    """Форма для блокировки пользователей менеджером"""
+
+    class Meta:
+        model = User
+        fields = ("email", "is_active",)
