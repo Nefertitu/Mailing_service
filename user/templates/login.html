@@ -14,7 +14,7 @@
                        Вход
                     </button>
                     <a class="p-2 btn btn-success" href="{% url 'mailings:start' %}">Отмена</a>
-                    <p></p><a href="#">Забыли пароль</a></p>
+                    <p><a href="{% url 'user:password_reset_custom' %}">Забыли пароль</a></p>
                 </div>
             </div>
         </div>

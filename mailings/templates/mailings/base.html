@@ -109,7 +109,7 @@
                                 <button type="submit" class="btn btn-link nav">Выйти</button>
                             </form>
                             <form>
-                                <a href="{% url 'user:user_update' request.user.pk %}" class="btn btn-link nav">Редактировать
+                                <a href="{% url 'user:user_update' user.pk %}" class="btn btn-link nav">Редактировать
                                     профиль</a>
                             </form>
                         </li>
@@ -132,13 +132,16 @@
                     </ul>
                     {% else %}
                     <li class="nav-item">
+                        <a href="{% url 'user:login' %}" class="btn btn-link nav" style="display:inline">Вход</a>
+                    </li>
+                    <li class="nav-item">
                         <form method="post" action="{% url 'user:register' %}" style="display:inline">
                             {% csrf_token %}
                             <button type="submit" class="btn btn-link nav">Регистрация</button>
                         </form>
                     </li>
                     {% endif %}
-                    {% if not "start" in request.path %}
+                    {% if not "start" and not "success_register" and not "success_confirm" in request.path %}
                     <form class="d-flex mt-3 mt-lg-0" action="{% url 'mailings:search_result' %}" method="get">
     <input class="form-control me-2"
            type="search"

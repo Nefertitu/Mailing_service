@@ -41,7 +41,7 @@ class RecipientListView(LoginRequiredMixin, ListView):
             return Recipient.objects.filter(owner=self.request.user)
 
 
-    def get_context_data(self, **kwargs):
+    def get_context_data(self, **kwargs) -> dict:
         """Добавляет сообщение о пустом списке получателей в контекст"""
 
         context = super().get_context_data(**kwargs)
@@ -70,7 +70,9 @@ class RecipientCreateView(LoginRequiredMixin, CreateView):
         form.instance.owner = self.request.user
         return super().form_valid(form)
 
-    def get_context_data(self, **kwargs):
+    def get_context_data(self, **kwargs) -> dict:
+        """Добавляет в контекст список клиентов пользователя"""
+
         context = super().get_context_data(**kwargs)
         user_recipients = Recipient.objects.filter(owner=self.request.user)
         context["existing_recipients"] = ", ".join(
@@ -145,7 +147,7 @@ class MessageListView(LoginRequiredMixin, ListView):
             return queryset.filter(owner=self.request.user)
         raise PermissionDenied("Менеджеры не могут просматривать сообщения")
 
-    def get_context_data(self,**kwargs):
+    def get_context_data(self,**kwargs) -> dict:
         """Добавляет сообщение о пустом списке сообщений в контекст"""
 
         context = super().get_context_data(**kwargs)
@@ -248,7 +250,7 @@ class MailingListView(LoginRequiredMixin, ListView):
             queryset = queryset.filter(owner=self.request.user, is_active=True)
         return queryset
 
-    def get_context_data(self,**kwargs):
+    def get_context_data(self,**kwargs) -> dict:
         """Добавляет сообщение о пустом списке рассылок в контекст"""
 
         context = super().get_context_data(**kwargs)
@@ -465,7 +467,9 @@ class StartView(TemplateView):
     success_url = reverse_lazy("mailings:start")
     context_object_name = "results"
 
-    def get_context_data(self, **kwargs):
+    def get_context_data(self, **kwargs) -> dict:
+        """Добавляет в контекст приветственное сообщение"""
+
         context = super().get_context_data(**kwargs)
 
         context["greetings"] = "Приветствуем Вас в сервисе рассылок Mailing Service!"
@@ -538,7 +542,9 @@ class SearchView(ListView):
 
         return results
 
-    def get_context_data(self, **kwargs):
+    def get_context_data(self, **kwargs) -> dict:
+        """Добавляет в контекст строку поискового запроса"""
+
         context = super().get_context_data(**kwargs)
         context['query'] = self.request.GET.get('q', '')
         return context

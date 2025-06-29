@@ -75,7 +75,6 @@ DATABASES = {
 }
 
 
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -136,6 +135,8 @@ EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 LOGIN_URL = "user:login"
+
+EMAIL_SUBJECT_PREFIX = '[MySite] '
 
 LOG_DIR = BASE_DIR / 'logs'
 LOG_DIR.mkdir(exist_ok=True, mode=0o777)
