@@ -190,8 +190,6 @@ class MessageListView(LoginRequiredMixin, ListView):
 
         if not user.is_manager:
             return messages_service.get_messages_from_cache().filter(owner=self.request.user)
-        elif user.is_superuser:
-            return messages_service.get_messages_from_cache()
         raise PermissionDenied("Менеджеры не могут просматривать сообщения")
 
     def get_context_data(self, **kwargs: Any) -> dict:
