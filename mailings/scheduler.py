@@ -1,10 +1,10 @@
 import logging
 from datetime import timedelta
 
-from apscheduler.jobstores.base import ConflictingIdError   # type: ignore[import]
-from apscheduler.schedulers.background import BackgroundScheduler   # type: ignore[import]
+from apscheduler.jobstores.base import ConflictingIdError  # type: ignore[import]
+from apscheduler.schedulers.background import BackgroundScheduler  # type: ignore[import]
 from django.utils import timezone
-from django_apscheduler.jobstores import DjangoJobStore   # type: ignore[import]
+from django_apscheduler.jobstores import DjangoJobStore  # type: ignore[import]
 
 from .models import Mailing
 
@@ -15,17 +15,17 @@ def check_periodic_mailings() -> None:
     """Проверка и запуск периодических рассылок"""
 
     if not hasattr(check_periodic_mailings, "_last_run"):
-        check_periodic_mailings._last_run = timezone.now() - timedelta(minutes=10)    # type: ignore[attr-defined]
+        check_periodic_mailings._last_run = timezone.now() - timedelta(minutes=10)  # type: ignore[attr-defined]
 
     now = timezone.now()
     print(f"\n=== DEBUG TIME: {now} ===")
-    time_since_last_run = (now - check_periodic_mailings._last_run).total_seconds()   # type: ignore[attr-defined]
+    time_since_last_run = (now - check_periodic_mailings._last_run).total_seconds()  # type: ignore[attr-defined]
 
     if time_since_last_run < 300:
         logger.debug(f"Пропуск запуска. С момента последнего запуска прошло только {time_since_last_run:.1f} сек.")
         return
 
-    check_periodic_mailings._last_run = now   # type: ignore[attr-defined]
+    check_periodic_mailings._last_run = now  # type: ignore[attr-defined]
     logger.info("==== Начало проверки рассылок ====")
 
     mailings = (
@@ -51,7 +51,7 @@ def check_periodic_mailings() -> None:
 def start_scheduler() -> None:
     """Запуск планировщика"""
 
-    if hasattr(start_scheduler, "_executed"):   # type: ignore[attr-defined]
+    if hasattr(start_scheduler, "_executed"):  # type: ignore[attr-defined]
         return
 
     scheduler = BackgroundScheduler()
@@ -80,12 +80,12 @@ def start_scheduler() -> None:
     try:
         logger.info("Запуск планировщика...")
         scheduler.start()
-        start_scheduler._executed = True   # type: ignore[attr-defined]
+        start_scheduler._executed = True  # type: ignore[attr-defined]
     except KeyboardInterrupt:
         logger.info("Остановка планировщика...")
         scheduler.shutdown()
         logger.info("Рассылка по расписанию успешно завершена!")
         return
 
-    if job := scheduler.get_job('periodic_mailings_check'):
+    if job := scheduler.get_job("periodic_mailings_check"):
         logger.info(f"Следующий запуск задачи: {job.next_run_time}")

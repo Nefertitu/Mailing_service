@@ -27,7 +27,6 @@ from mailings.views import (
     run_mailing_command,
 )
 
-
 app_name = MailingsConfig.name
 
 

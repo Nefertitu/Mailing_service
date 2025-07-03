@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Type, List, Union, cast, Dict, Optional
+from typing import Any, Dict, List, Optional, Type, Union, cast
 
 from django import forms
 from django.contrib import messages
@@ -8,7 +8,6 @@ from django.core.exceptions import PermissionDenied
 from django.core.management import call_command
 from django.db import models
 from django.db.models import Q, QuerySet
-
 from django.http import HttpRequest, HttpResponse, HttpResponseBase
 from django.shortcuts import redirect, render
 from django.urls import reverse, reverse_lazy
@@ -20,7 +19,7 @@ from django.views.generic.edit import CreateView, DeleteView, UpdateView
 
 from mailings.forms import MailingForm, MailingManagerForm, MessageForm, RecipientForm
 from mailings.models import Mailing, MailingAttempt, Message, Recipient
-from mailings.services import StatisticsService, DataService
+from mailings.services import DataService, StatisticsService
 from user.models import User
 
 logger = logging.getLogger("mailings")
@@ -95,9 +94,7 @@ class RecipientCreateView(LoginRequiredMixin, CreateView):
         context["existing_recipients"] = ", ".join(
             recipient.get_recipients_display(user=user) for recipient in user_recipients
         )
-        context["existing_messages"] = ", ".join(
-            message.get_messages_display(user=user) for message in user_messages
-        )
+        context["existing_messages"] = ", ".join(message.get_messages_display(user=user) for message in user_messages)
         return context
 
 
@@ -154,7 +151,6 @@ class RecipientUpdateView(LoginRequiredMixin, UpdateView):
         )
 
         return context
-
 
     def get_success_url(self) -> str:
         """Для отображения детальной страницы клиента после её редактирования"""
@@ -299,7 +295,7 @@ class MailingListView(LoginRequiredMixin, ListView):
             mailing.update_status()
         return queryset
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[Any]:
         """Фильтрация по правам доступа"""
 
         if not self.request.user.is_authenticated:
@@ -308,10 +304,9 @@ class MailingListView(LoginRequiredMixin, ListView):
         mailings_service = DataService()
         user = self.request.user
 
-        if user.is_manager or user.is_superuser:
+        if user.is_manager:
             return mailings_service.get_mailings_from_cache()
-        if not user.is_manager and not user.is_superuser:
-            return mailings_service.get_mailings_from_cache(user=user)
+        return mailings_service.get_mailings_from_cache(user=user)
 
     def get_context_data(self, **kwargs: Any) -> dict:
         """Добавляет сообщение о пустом списке рассылок в контекст"""
@@ -333,7 +328,7 @@ class MailingCreateView(LoginRequiredMixin, CreateView):
     # User = get_user_model()
 
     def get_form(self, form_class: Optional[Type[forms.Form]] = None) -> forms.Form:
-        """"Возвращает форму с фильтрацией полей по правам пользователя"""
+        """ "Возвращает форму с фильтрацией полей по правам пользователя"""
 
         form = super().get_form(form_class)
 
@@ -410,7 +405,7 @@ class MailingUpdateView(LoginRequiredMixin, UpdateView):
         return super().dispatch(request, *args, **kwargs)
 
     def get_form(self, form_class: Optional[Type[forms.Form]] = None) -> forms.Form:
-        """"Возвращает форму с фильтрацией полей по правам пользователя"""
+        """ "Возвращает форму с фильтрацией полей по правам пользователя"""
 
         form = super().get_form(form_class)
 
@@ -574,11 +569,7 @@ class HomeView(View):
 
         user = self.request.user
 
-        context = (
-            stats_service.get_manager_stats()
-            if user.is_manager
-            else stats_service.get_user_stats(user)
-        )
+        context = stats_service.get_manager_stats() if user.is_manager else stats_service.get_user_stats(user)
         return render(request, "mailings/home.html", context)
 
 
@@ -606,7 +597,7 @@ class SearchView(ListView):
     context_object_name = "results"
 
     # @method_decorator(cache_page(60 * 5), name='dispatch')
-    def get_queryset(self) -> QuerySet | list:   # type: ignore[override]
+    def get_queryset(self) -> QuerySet | list:  # type: ignore[override]
         """Поиск контекста"""
 
         query = self.request.GET.get("q", "").strip()
@@ -617,9 +608,9 @@ class SearchView(ListView):
         user = cast(User, request.user)
 
         if not user.is_authenticated:
-            return[]
+            return []
 
-        results: List[Union['Recipient', 'Message', 'Mailing', 'MailingAttempt']] = []
+        results: List[Union["Recipient", "Message", "Mailing", "MailingAttempt"]] = []
 
         # 1. Поиск получателей
         recipients = Recipient.objects.filter(Q(email__icontains=query) | Q(fullname__icontains=query))
@@ -639,7 +630,10 @@ class SearchView(ListView):
 
         # 3. Поиск рассылок
         mailings = Mailing.objects.filter(
-            Q(status__icontains=query) | Q(message__title__icontains=query) | Q(start_at__icontains=query)  | Q(end_at__icontains=query)
+            Q(status__icontains=query)
+            | Q(message__title__icontains=query)
+            | Q(start_at__icontains=query)
+            | Q(end_at__icontains=query)
         )
         if user.is_manager:
             mailings = mailings.all()

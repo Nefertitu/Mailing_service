@@ -1,7 +1,7 @@
 from typing import Optional
 
 from django.core.cache import cache
-from django.db.models import QuerySet, Prefetch
+from django.db.models import Prefetch, QuerySet
 from django.utils import timezone
 
 from config.settings import CACHE_ENABLED
@@ -40,20 +40,21 @@ class StatisticsService:
             "datetime_now": timezone.now(),
         }
 
+
 class DataService:
     """Сервис для работы с данными пользователей"""
 
-    def get_recipients_from_cache(self,  user: "Optional[User]" = None) -> QuerySet[Recipient]:
+    def get_recipients_from_cache(self, user: "Optional[User]" = None) -> QuerySet[Recipient]:
         """Получает данные о клиентах из кэша, если кэш пуст,
         получает данные из базы данных"""
 
         if not CACHE_ENABLED:
             print("Кэш отключен")
-            if user.is_manager:
+            if user is None or (user.is_authenticated and user.is_manager):
                 return Recipient.objects.all()
             return Recipient.objects.filter(owner=user)
 
-        if user is None or user.is_manager:
+        if user is None or (user.is_authenticated and user.is_manager):
             key = "recipients_list_all"
         else:
             key = f"recipients_list_{user.pk}"
@@ -66,15 +67,14 @@ class DataService:
             return recipients
         print("Данные не найдены в кэше, запрос к БД")
 
-        if user is None or user.is_manager:
+        if user is None or (user.is_authenticated and user.is_manager):
             recipients = Recipient.objects.all()
         else:
             recipients = Recipient.objects.filter(owner=user)
 
         cache.set(key, recipients)
-        print(f'Данные сохранены в кэше по ключу: {key}')
+        print(f"Данные сохранены в кэше по ключу: {key}")
         return recipients
-
 
     def get_messages_from_cache(self, user: "Optional[User]" = None) -> QuerySet[Message]:
         """Получает данные о клиентах из кэша, если кэш пуст,
@@ -104,9 +104,8 @@ class DataService:
             messages = Message.objects.filter(owner=user)
 
         cache.set(key, messages)
-        print(f'Данные сохранены в кэше по ключу: {key}')
+        print(f"Данные сохранены в кэше по ключу: {key}")
         return messages
-
 
     def get_mailings_from_cache(self, user: "Optional[User]" = None) -> QuerySet[Mailing]:
         """Получает данные о клиентах из кэша, если кэш пуст,
@@ -114,15 +113,15 @@ class DataService:
 
         if not CACHE_ENABLED:
             print("Кэш отключен")
-            if user.is_manager:
-                qs = Mailing.objects.all()
-            qs = Mailing.objects.filter(owner=user)
+            qs = Mailing.objects.all()
+            if user is not None and not user.is_manager:
+                qs = Mailing.objects.filter(owner=user)
             return self._update_mailings_status(qs)
 
-        if user is None or user.is_manager:
+        if user is None or (user.is_authenticated and user.is_manager):
             key = "mailings_list_all"
         else:
-            key = f"mailing_list_{user.pk}"
+            key = f"mailings_list_{user.pk}"
 
         mailings = cache.get(key)
         print(f"Попытка получить по ключу: {key}")
@@ -132,32 +131,30 @@ class DataService:
             return self._update_mailings_status(mailings)
         print("Данные не найдены в кэше, запрос к БД")
 
-        if user is None or user.is_manager:
-            mailings = mailings = Mailing.objects.select_related(
-                'message', 'owner'
-                ).prefetch_related(
-                Prefetch(
-                    'recipients',
-                    queryset=Recipient.objects.only('email', 'owner__id', 'owner__email')
-                )).all()
-        else:
-            mailings = Mailing.objects.filter(owner=user).select_related(
-                'message', 'owner'
-                ).prefetch_related(
-                Prefetch(
-                    'recipients',
-                    queryset=Recipient.objects.only('email', 'owner__id', 'owner__email'),
-                    to_attr='prefetched_emails'
+        if user is None or (user.is_authenticated and user.is_manager):
+            mailings = (
+                Mailing.objects.select_related("message", "owner")
+                .prefetch_related(
+                    Prefetch("recipients", queryset=Recipient.objects.only("email", "owner__id", "owner__email"))
                 )
-            ).only(
-                'id',
-                'message__id',
-                'status',
-                'owner__id'
+                .all()
+            )
+        else:
+            mailings = (
+                Mailing.objects.filter(owner=user)
+                .select_related("message", "owner")
+                .prefetch_related(
+                    Prefetch(
+                        "recipients",
+                        queryset=Recipient.objects.only("email", "owner__id", "owner__email"),
+                        to_attr="prefetched_emails",
+                    )
+                )
+                .only("id", "message__id", "status", "owner__id")
             )
 
         cache.set(key, mailings)
-        print(f'Данные сохранены в кэше по ключу: {key}')
+        print(f"Данные сохранены в кэше по ключу: {key}")
         return self._update_mailings_status(mailings)
 
     def _update_mailings_status(self, mailings: QuerySet[Mailing]) -> QuerySet[Mailing]:
@@ -172,40 +169,6 @@ class DataService:
                 to_update.append(mailing)
 
         if to_update:
-            Mailing.objects.bulk_update(
-                to_update,
-                ['status', 'is_active'],
-                batch_size=100
-            )
+            Mailing.objects.bulk_update(to_update, ["status", "is_active"], batch_size=100)
 
         return mailings
-
-
-    # def get_users_from_cache(self, user: "Optional[User]") -> QuerySet[User, User] | None | Any:
-    #     """Получает данные о клиентах из кэша, если кэш пуст,
-    #     получает данные из базы данных"""
-    #
-    #     if not CACHE_ENABLED:
-    #         print("Кэш отключен")
-    #         if user.is_manager:
-    #             return User.objects.all()
-    #
-    #     if user.is_manager:
-    #         key = "users_list_all"
-    #
-    #         users = cache.get(key)
-    #         print(f"Попытка получить по ключу: {key}")
-    #
-    #         if users is not None:
-    #             print(f"Данные найдены в кэше: {key}")
-    #             return users
-    #         print("Данные не найдены в кэше, запрос к БД")
-    #
-    #         if user.is_manager:
-    #             users = User.objects.all()
-    #
-    #         cache.set(key, users)
-    #         print(f'Данные сохранены в кэше по ключу: {key}')
-    #         return users
-
-

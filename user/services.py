@@ -1,4 +1,4 @@
-from typing import Optional, Any
+from typing import Any, Optional
 
 from django.core.cache import cache
 from django.db.models import QuerySet
@@ -10,16 +10,17 @@ from user.models import User
 class UserDataService:
     """Сервис для работы с данными пользователей"""
 
-    def get_users_from_cache(self, user: "Optional[User]") -> QuerySet[User, User] | None | Any:
+    def get_users_from_cache(self, user: Optional[User] = None) -> Any:
         """Получает данные о клиентах из кэша, если кэш пуст,
         получает данные из базы данных"""
 
         if not CACHE_ENABLED:
             print("Кэш отключен")
-            if user.is_manager:
+            if user is None or (user.is_authenticated and user.is_manager):
                 return User.objects.all()
+            return User.objects.none()
 
-        if user.is_manager:
+        if user is None or (user.is_authenticated and user.is_manager):
             key = "users_list_all"
 
             users = cache.get(key)
@@ -27,12 +28,16 @@ class UserDataService:
 
             if users is not None:
                 print(f"Данные найдены в кэше: {key}")
-                return users
+                if isinstance(users, QuerySet):
+                    return users
+                return User.objects.none()
             print("Данные не найдены в кэше, запрос к БД")
 
-            if user.is_manager:
+            if user is None or (user.is_authenticated and user.is_manager):
                 users = User.objects.all()
+            else:
+                return User.objects.none()
 
             cache.set(key, users)
-            print(f'Данные сохранены в кэше по ключу: {key}')
+            print(f"Данные сохранены в кэше по ключу: {key}")
             return users

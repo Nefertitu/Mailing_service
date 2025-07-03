@@ -118,7 +118,7 @@ CRISPY_TEMPLATE_PACK = "bootstrap5"
 AUTH_USER_MODEL = "user.User"
 
 LOGIN_REDIRECT_URL = "mailings:home"
-LOGOUT_REDIRECT_URL = "user:start"
+LOGOUT_REDIRECT_URL = 'admin:login'
 
 AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
@@ -176,7 +176,6 @@ if CACHE_ENABLED:
             "BACKEND": "django.core.cache.backends.redis.RedisCache",
             "LOCATION": os.getenv("LOCATION"),
             "TIMEOUT": 300,
-            'KEY_PREFIX': 'mailing_service',
+            "KEY_PREFIX": "mailing_service",
         }
     }
-

@@ -1,7 +1,7 @@
 from typing import Any
 
 from django.contrib.auth.forms import PasswordChangeForm, UserChangeForm, UserCreationForm
-from django.core.exceptions import ValidationError
+
 from django.forms import ModelForm
 
 from core.mixins import StyleFormMixin

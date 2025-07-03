@@ -1,8 +1,8 @@
+from typing import TYPE_CHECKING
+
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from phonenumber_field.modelfields import PhoneNumberField  # type: ignore[import-untyped]
-
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from mailings.models import Mailing

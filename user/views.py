@@ -1,5 +1,5 @@
 import secrets
-from typing import Optional, Type, cast, Any
+from typing import Any, Optional, Type, cast
 
 from django import forms
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -20,10 +20,10 @@ from django.views.generic import ListView, TemplateView
 from django.views.generic.edit import CreateView, UpdateView
 
 from config.settings import EMAIL_HOST_USER
-from .services import UserDataService
 
 from .forms import CustomPasswordChangeForm, CustomUserChangeForm, CustomUserCreationForm, UserManagerForm
 from .models import User
+from .services import UserDataService
 
 
 class RegisterView(CreateView):
@@ -168,7 +168,8 @@ class UserListView(ListView):
         user = self.request.user
 
         if user.is_manager:
-            return users_service.get_users_from_cache(user=user)
+            queryset = users_service.get_users_from_cache(user=user)
+            return queryset if isinstance(queryset, QuerySet) else User.objects.none()
         return User.objects.none()
 
     def get_context_data(self, **kwargs: Any) -> dict:
@@ -212,7 +213,7 @@ class PasswordResetCustomCompleteView(PasswordResetCompleteView):
     }
 
     def get_context_data(self, **kwargs: Any) -> dict:
-        """Добавляет данные в контекст - имя вебприложения"""
+        """Добавляет данные в контекст - имя веб-приложения"""
 
         context = super().get_context_data(**kwargs)
 

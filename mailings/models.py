@@ -1,14 +1,12 @@
 import logging
 import os
-from datetime import timedelta, datetime
-from typing import Any, Optional, Dict, Union, List, cast
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional, Union, cast
 
 from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
 from django.db import models
-from django.http import HttpRequest
 from django.utils import timezone
-from mypy.dmypy.client import request
 
 from user.models import User
 
@@ -229,8 +227,8 @@ class Mailing(models.Model):
 
         results: Dict[str, Union[int, List[str]]] = {
             "total": self.recipients.count(),
-            "success": 0,    # int
-            "errors": [],    # List[str]
+            "success": 0,  # int
+            "errors": [],  # List[str]
         }
         recipients = self.recipients.all()
         message = self.message
@@ -298,10 +296,7 @@ class Mailing(models.Model):
             return True
 
         end_at = cast(Optional[datetime], self.end_at)
-        if (self.is_periodic
-                and end_at
-                and end_at <= now
-                and self.status != self.COMPLETED):
+        if self.is_periodic and end_at and end_at <= now and self.status != self.COMPLETED:
             self.status = self.COMPLETED
             self.is_active = False
             return True
@@ -353,7 +348,7 @@ class Mailing(models.Model):
         """Отображение информации о рассылке"""
         return "Рассылка по расписанию" if self.is_periodic else ""
 
-    def get_custom_period_display(self) -> str:    # type: ignore[empty-body]
+    def get_custom_period_display(self) -> str:  # type: ignore[empty-body]
         """Отображение информации о периоде рассылки"""
 
         if not self.period:
@@ -364,17 +359,15 @@ class Mailing(models.Model):
     def schedule_details(self) -> Dict[str, Any]:
         """Возвращает детализированную информацию о расписании в виде словаря"""
 
-        result: Dict[str, Any]  = {
-            "is_periodic": self.is_periodic,
-            "period": None,
-            "next_run": None
-        }
+        result: Dict[str, Any] = {"is_periodic": self.is_periodic, "period": None, "next_run": None}
 
         if self.is_periodic:
-            result.update({
-                "period": self.get_custom_period_display() if self.period else None,
-                "next_run": self.next_run.strftime("%d.%m.%Y %H:%M") if self.next_run else None,
-            })
+            result.update(
+                {
+                    "period": self.get_custom_period_display() if self.period else None,
+                    "next_run": self.next_run.strftime("%d.%m.%Y %H:%M") if self.next_run else None,
+                }
+            )
         return result
 
 

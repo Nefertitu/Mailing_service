@@ -12,6 +12,6 @@ def model_type(object: Any) -> str:
 
 
 @register.filter(name="select_model_type")
-def select_model_type(items: Iterable, model_type: str) ->  list:
+def select_model_type(items: Iterable, model_type: str) -> list:
     """Фильтрует список объектов по типу модели"""
     return [item for item in items if item.__class__.__name__ == model_type]

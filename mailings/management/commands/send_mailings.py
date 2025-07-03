@@ -39,7 +39,6 @@ class Command(BaseCommand):
             self.stdout.write(f"Тема: {mailing.message.title if mailing.message else 'Без темы'}")
             self.stdout.write(f"Получателей: {mailing.recipients.count()}")
 
-
             if not mailing.prepare_for_sending():
                 self.stdout.write(self.style.WARNING("Рассылка уже завершена"))
                 continue
