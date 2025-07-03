@@ -1,5 +1,5 @@
-import os
 import logging
+import os
 
 from django.apps import AppConfig
 from django.conf import settings
@@ -12,14 +12,16 @@ class MailingsConfig(AppConfig):
     name = "mailings"
     _scheduler_started = False
 
-    def ready(self):
+    def ready(self) -> None:
         """Импорт сигналов"""
 
         from mailings import signals
+
         print(f"Сигналы загружены: {signals.__name__}")
-        if not settings.DEBUG or os.environ.get('RUN_MAIN') and not self._scheduler_started:
+        if not settings.DEBUG or os.environ.get("RUN_MAIN") and not self._scheduler_started:
             try:
                 from .scheduler import start_scheduler
+
                 start_scheduler()
                 self._scheduler_started = True
                 print("Старт планировщика")
@@ -27,13 +29,13 @@ class MailingsConfig(AppConfig):
             except ImportError as e:
                 logger.error(f"Ошибка инициализации: {e}")
 
-
-    def _start_scheduler(self):
+    def _start_scheduler(self) -> None:
         """Запускает планировщик гарантированно один раз"""
 
         if not self._scheduler_started:
             try:
                 from .scheduler import start_scheduler
+
                 start_scheduler()
                 self._scheduler_started = True
                 logger.info("Планировщик рассылок успешно запущен")

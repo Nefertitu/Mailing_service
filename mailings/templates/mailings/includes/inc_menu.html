@@ -1,6 +1,6 @@
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark" aria-label="Offcanvas navbar large">
     <div class="container-fluid"><a class="navbar-brand" href="#">Mailings Service</a>
-       {% if user.is_authenticated and not request.user.is_manager %}
+        {% if user.is_authenticated and not request.user.is_manager %}
         <form method="post" action="{% url 'mailings:run_mailing' %}">
             {% csrf_token %}
             <input type="hidden" name="next" value="{{ request.path }}">
@@ -25,26 +25,40 @@
             </div>
             <div class="offcanvas-body">
                 <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
-                     {% if user.is_authenticated %}
+                    {% if user.is_authenticated %}
 
-                    <li class="nav-item"><a class="nav-link active" aria-current="page" href="{% url 'mailings:home' %}">Главная</a></li>
-                <li class="nav-item">
-                    <form method="post" action="{% url 'user:logout' %}" style="d-inline">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-link nav">Выйти</button>
-                    </form>
-                </li>
-{% if "start" not in request.path %}
+                    <li class="nav-item"><a class="nav-link active" aria-current="page"
+                                            href="{% url 'mailings:home' %}">Главная</a></li>
+                    <li class="nav-item">
+                        <form method="post" action="{% url 'user:logout' %}" style="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-link nav">Выйти</button>
+                        </form>
+                    </li>
+                    <li>
+                     <form class="d-flex mt-3 mt-lg-0" action="{% url 'mailings:search_result' %}" method="get">
+                    <input class="form-control me-2"
+                           type="search"
+                           name="q"
+                           placeholder="Поиск"
+                           aria-label="Search"
+                           required
+                           minlength="3">
+                    <button class="btn btn-outline-success" type="submit">Поиск</button>
+                </form>
+                    </li>
+                    {% else %}
+                    {% if "start" not in request.path %}
                     <li class="nav-item">
 
-                    <form method="post" action="{% url 'user:register' %}" style="display:inline">
-                    {% csrf_token %}
-                        <button type="submit" class="btn btn-link nav">Регистрация</button>
-                    </form>
-                </li>
+                        <form method="post" action="{% url 'user:register' %}" style="display:inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-link nav">Регистрация</button>
+                        </form>
+                    </li>
                     {% endif %}
 
-{% if user.is_authenticated and not request.user.is_manager%}
+                    {% if user.is_authenticated and not request.user.is_manager%}
                     <li class="nav-item dropdown"><a class="nav-link active dropdown-toggle" href="#" role="button"
                                                      data-bs-toggle="dropdown" aria-expanded="false">
                         Создать элемент
@@ -69,20 +83,20 @@
                         </ul>
                     </li>
                 </ul>
-{% endif %}
-                <form class="d-flex mt-3 mt-lg-0" action="{% url 'mailings:search_result' %}" method="get">
-    <input class="form-control me-2"
-           type="search"
-           name="q"
-           placeholder="Поиск"
-           aria-label="Search"
-           required
-           minlength="3">
-                    <button class="btn btn-outline-success" type="submit">Поиск</button>
-                </form>
+                {% endif %}
 
                 {% endif %}
             </div>
+
         </div>
     </div>
+
 </nav>
+
+{% if user.is_authenticated %}
+<p class="text-end">Выполнен вход пользователя: {{ user.email }}
+    {% if user.is_manager %} с правами менеджера
+    {% elif user.is_superuser%} с правами суперпользователя
+    {% endif %}
+</p>
+{% endif %}

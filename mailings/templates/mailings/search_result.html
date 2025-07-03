@@ -9,68 +9,67 @@
     {% with recipients=results|select_model_type:"Recipient" %}
     {% if recipients %}
     <div class="mb-4">
-        <h5><a class="nav-link" href="{% url 'mailings:recipient_list' %}">Получатели</a></h5>
+        <h3><a class="nav-link" href="{% url 'mailings:recipient_list' %}">Получатели</a></h3>
         <div class="list-group">
-            {% for item in results %}
-            {% if item|model_type == 'Recipient' %}
+            {% for item in recipients%}
             <div class="list-group-item">
                 <h6>{{ item.fullname }}</h6>
                 <p>Email: {{ item.email }}</p>
             </div>
-            {% endif %}
             {% endfor %}
         </div>
     </div>
     {% endif %}
     {% endwith %}
 
+
     {% with messages=results|select_model_type:"Message" %}
     {% if messages %}
+
     <div class="mb-4">
-        <h5><a class="nav-link" href="{% url 'mailings:message_list' %}">Сообщения</a></h5>
+        <h3><a class="nav-link" href="{% url 'mailings:message_list' %}">Сообщения</a></h3>
         <div class="list-group">
-            {% for item in results %}
-            {% if item|model_type == 'Message' %}
+            {% for item in messages %}
             <div class="list-group-item">
                 <h6>{{ item.title }}</h6>
                 <p>{{ item.body|truncatechars:100 }}</p>
             </div>
-            {% endif %}
+
             {% endfor %}
         </div>
     </div>
     {% endif %}
     {% endwith %}
 
-    {% with messages=results|select_model_type:"Mailing" %}
+    {% with mailings=results|select_model_type:"Mailing" %}
     {% if mailings %}
     <div class="mb-4">
-        <h5><a class="nav-link" href="{% url 'mailings:mailing_list' %}">Рассылки</a></h5>
+        <h3><a class="nav-link" href="{% url 'mailings:mailing_list' %}">Рассылки</a></h3>
         <div class="list-group">
-            {% for item in results %}
-            {% if item|model_type == 'Mailing' %}
+            {% for item in mailings %}
             <div class="list-group-item">
                 <h6>Рассылка #{{ item.id }}</h6>
                 <p>
                     Сообщение: {{ item.message.title }}<br>
                     Статус: {{ item.get_status_display }}<br>
-                    Владелец: {{ item.owner.username }}
+                    Владелец: {{ item.owner}}<br>
+                    Дата и время первой отправки: {{ item.start_at }}<br>
+                    Дата и время первой отправки: {{ item.end_at }}<br>
                 </p>
             </div>
-            {% endif %}
+
             {% endfor %}
         </div>
     </div>
     {% endif %}
     {% endwith %}
 
-    {% with messages=results|select_model_type:"MailingAttempt" %}
+    {% with mailingattempts=results|select_model_type:"MailingAttempt" %}
     {% if mailingattempts %}
     <div class="mb-4">
-        <h5><a class="nav-link" href="{% url 'mailings:mailingattempt_list' %}">Попытки рассылок</a></h5>
+        <h3><a class="nav-link" href="{% url 'mailings:mailingattempt_list' %}">Попытки рассылок</a></h3>
         <div class="list-group">
-            {% for item in results %}
-            {% if item|model_type == 'MailingAttempt' %}
+            {% for item in mailingattempts %}
             <div class="list-group-item">
                 <h6>Попытка #{{ item.id }}</h6>
                 <p>
@@ -79,7 +78,7 @@
                     Статус: {{ item.get_status_display }}
                 </p>
             </div>
-            {% endif %}
+
             {% endfor %}
         </div>
     </div>
@@ -88,7 +87,7 @@
 
     {% else %}
     <div class="alert alert-info">
-        Ничего не найдено по запросу "{{ query }}"
+        Ничего не найдено в доступном контенте по запросу "{{ query }}"
     </div>
     {% endif %}
 </div>

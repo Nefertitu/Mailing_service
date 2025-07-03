@@ -47,7 +47,7 @@ warn_return_any = true
 warn_unused_configs = true
 check_untyped_defs = true
 strict_optional = true
-exclude = ['venv', 'tests', 'phonenumber_field', ]
+exclude = ["venv", "tests", "phonenumber_field", ".*migrations/.*", ]
 plugins = [
     "mypy_django_plugin.main",
     "pydantic.mypy"
@@ -56,6 +56,8 @@ disable_error_code = [
     "empty-body",
     "no-any-return"
 ]
+"django_apscheduler.*".ignore_missing_imports = true
+"apscheduler.*".ignore_missing_imports = true
 
 
 [tool.black]
@@ -79,4 +81,20 @@ skip_gitignore = true
 [tool.django-stubs]
 django_settings_module = "config.settings"
 strict_settings = true
+
+[tool.flake8]
+max-line-length = 119
+ignore = "E503, E121, E122, E501"
+exclude =  [
+    ".venv",
+    "venv",
+    ".git",
+    "__pycache__",
+    "*.min.js",
+    "*.min.css",
+    "build",
+    "dist",
+    "migrations"
+]
+
 

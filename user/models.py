@@ -2,6 +2,11 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from phonenumber_field.modelfields import PhoneNumberField  # type: ignore[import-untyped]
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from mailings.models import Mailing
+
 
 class User(AbstractUser):
     """Модель пользователя с кастомными полями.
@@ -21,28 +26,24 @@ class User(AbstractUser):
         upload_to="users/avatars/", blank=True, null=True, verbose_name="Аватар", help_text="Загрузите свой аватар"
     )
     COUNTRY_CHOICES = [
-        ('RU', 'Russia'),
-        ('KZ', 'Kazakhstan'),
-        ('BY', 'Belarus'),
-        ('US', 'United States'),
-        ('DE', 'Germany'),
-        ('UK', 'United Kingdom'),
-        ('GE', 'Georgia'),
-        ('OTHER', 'Other country')
-
+        ("RU", "Russia"),
+        ("KZ", "Kazakhstan"),
+        ("BY", "Belarus"),
+        ("US", "United States"),
+        ("DE", "Germany"),
+        ("UK", "United Kingdom"),
+        ("GE", "Georgia"),
+        ("OTHER", "Other country"),
     ]
     country = models.CharField(max_length=50, choices=COUNTRY_CHOICES, blank=True, null=True)
     token = models.CharField(max_length=100, verbose_name="Token", blank=True, null=True)
     is_manager = models.BooleanField(
-        default=False,
-        null=True,
-        blank=True,
-        help_text="Добавление пользователю статуса 'менеджер'"
+        default=False, null=True, blank=True, help_text="Добавление пользователю статуса 'менеджер'"
     )
     is_active = models.BooleanField(
         verbose_name="",
         default=True,
-        help_text= "✅Активен/◻️Неактивен (Снять отметку, сделав пользователя неактивным)",
+        help_text="✅Активен/◻️Неактивен (Снять отметку, сделав пользователя неактивным)",
     )
 
     USERNAME_FIELD = "email"
@@ -60,6 +61,7 @@ class User(AbstractUser):
             ("can_block_users", "Can block users"),
         ]
 
-    def can_view_recipients(self, mailing):
-        return self.is_manager or mailing.owner == self
+    def can_view_recipients(self, mailing: "Mailing") -> bool:
+        """Проверяет, имеет ли пользователь право просматривать получателей рассылки"""
 
+        return self.is_manager or mailing.owner == self

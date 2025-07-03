@@ -1,27 +1,27 @@
 import logging
-
-from typing import Any, Type
+from typing import Any, Type, List, Union, cast, Dict, Optional
 
 from django import forms
+from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
+from django.core.management import call_command
 from django.db import models
-from django.db.models import QuerySet, Q
-from django.urls import reverse_lazy, reverse
+from django.db.models import Q, QuerySet
+
+from django.http import HttpRequest, HttpResponse, HttpResponseBase
+from django.shortcuts import redirect, render
+from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.views import View
+from django.views.decorators.http import require_POST
 from django.views.generic import DetailView, ListView, TemplateView
 from django.views.generic.edit import CreateView, DeleteView, UpdateView
-from django.http import HttpResponse, HttpRequest
 
-from mailings.forms import RecipientForm, MessageForm, MailingForm, MailingManagerForm
-from mailings.models import Recipient, Message, Mailing, MailingAttempt
-from django.shortcuts import redirect, render, get_object_or_404
-from django.views.decorators.http import require_POST
-from django.core.management import call_command
-from django.contrib import messages
-
-from mailings.services import StatisticsService, UserDataService
+from mailings.forms import MailingForm, MailingManagerForm, MessageForm, RecipientForm
+from mailings.models import Mailing, MailingAttempt, Message, Recipient
+from mailings.services import StatisticsService, DataService
+from user.models import User
 
 logger = logging.getLogger("mailings")
 
@@ -31,17 +31,20 @@ class RecipientListView(LoginRequiredMixin, ListView):
 
     model = Recipient
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet:
         """Возвращает список клиентов пользователям с правами доступа"""
 
-        queryset = super().get_queryset()
-        if self.request.user.is_manager:
-            return queryset
-        else:
-            return Recipient.objects.filter(owner=self.request.user)
+        if not self.request.user.is_authenticated:
+            raise PermissionDenied("Доступ запрещен")
 
+        recipients_service = DataService()
+        user = self.request.user
 
-    def get_context_data(self, **kwargs) -> dict:
+        if user.is_manager:
+            return recipients_service.get_recipients_from_cache()
+        return recipients_service.get_recipients_from_cache().filter(owner=self.request.user)
+
+    def get_context_data(self, **kwargs: Any) -> dict:
         """Добавляет сообщение о пустом списке получателей в контекст"""
 
         context = super().get_context_data(**kwargs)
@@ -58,9 +61,15 @@ class RecipientCreateView(LoginRequiredMixin, CreateView):
     form_class = RecipientForm
     success_url = reverse_lazy("mailings:recipient_list")
 
-    def dispatch(self, request, *args, **kwargs):
+    def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponseBase:
         """Запрет доступа менеджерам на уровне входа в view"""
-        if request.user.is_manager:
+
+        if not self.request.user.is_authenticated:
+            raise PermissionDenied("Доступ запрещен")
+
+        user = self.request.user
+
+        if user.is_manager:
             raise PermissionDenied("Менеджерам запрещено создавать получателей")
         return super().dispatch(request, *args, **kwargs)
 
@@ -70,14 +79,24 @@ class RecipientCreateView(LoginRequiredMixin, CreateView):
         form.instance.owner = self.request.user
         return super().form_valid(form)
 
-    def get_context_data(self, **kwargs) -> dict:
+    def get_context_data(self, **kwargs: Any) -> dict:
         """Добавляет в контекст список клиентов пользователя"""
 
         context = super().get_context_data(**kwargs)
-        user_recipients = Recipient.objects.filter(owner=self.request.user)
+
+        if not self.request.user.is_authenticated:
+            raise PermissionDenied("Доступ запрещен")
+
+        user = self.request.user
+
+        user_recipients = Recipient.objects.filter(owner=user)
+        user_messages = Message.objects.filter(owner=user)
+
         context["existing_recipients"] = ", ".join(
-            recipient.get_recipients_display(user=self.request.user)
-            for recipient in user_recipients
+            recipient.get_recipients_display(user=user) for recipient in user_recipients
+        )
+        context["existing_messages"] = ", ".join(
+            message.get_messages_display(user=user) for message in user_messages
         )
         return context
 
@@ -87,11 +106,17 @@ class RecipientDetailView(LoginRequiredMixin, DetailView):
 
     model = Recipient
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet:
         """Возвращает карточку клиента пользователю с правами менеджера"""
 
         queryset = super().get_queryset()
-        if not self.request.user.is_manager:
+
+        if not self.request.user.is_authenticated:
+            raise PermissionDenied("Доступ запрещен")
+
+        user = self.request.user
+
+        if not user.is_manager:
             queryset = queryset.filter(owner=self.request.user)
         return queryset
 
@@ -103,7 +128,7 @@ class RecipientUpdateView(LoginRequiredMixin, UpdateView):
     form_class = RecipientForm
     success_url = reverse_lazy("mailings:recipient_list")
 
-    def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any):
+    def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponseBase:
         """Проверка прав доступа пользователя"""
 
         self.object = self.get_object()
@@ -111,6 +136,25 @@ class RecipientUpdateView(LoginRequiredMixin, UpdateView):
         if request.user != self.object.owner:
             raise PermissionDenied("Вы не можете редактировать этого получателя")
         return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs: Any) -> dict:
+        """Добавляет в контекст список клиентов пользователя"""
+
+        context = super().get_context_data(**kwargs)
+
+        if not self.request.user.is_authenticated:
+            raise PermissionDenied("Доступ запрещен")
+
+        user = self.request.user
+
+        user_recipients = Recipient.objects.filter(owner=user)
+
+        context["existing_recipients"] = ", ".join(
+            recipient.get_recipients_display(user=user) for recipient in user_recipients
+        )
+
+        return context
+
 
     def get_success_url(self) -> str:
         """Для отображения детальной страницы клиента после её редактирования"""
@@ -123,7 +167,7 @@ class RecipientDeleteView(LoginRequiredMixin, DeleteView):
     model = Recipient
     success_url = reverse_lazy("mailings:recipient_list")
 
-    def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any):
+    def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponseBase:
         """Проверка прав доступа пользователя"""
 
         self.object = self.get_object()
@@ -139,15 +183,22 @@ class MessageListView(LoginRequiredMixin, ListView):
     model = Message
     paginate_by = 3
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet:
         """Возвращает список сообщений пользователям с правами доступа"""
 
-        queryset = super().get_queryset()
-        if not self.request.user.is_manager:
-            return queryset.filter(owner=self.request.user)
+        if not self.request.user.is_authenticated:
+            raise PermissionDenied("Доступ запрещен")
+
+        messages_service = DataService()
+        user = self.request.user
+
+        if not user.is_manager:
+            return messages_service.get_messages_from_cache().filter(owner=self.request.user)
+        elif user.is_superuser:
+            return messages_service.get_messages_from_cache()
         raise PermissionDenied("Менеджеры не могут просматривать сообщения")
 
-    def get_context_data(self,**kwargs) -> dict:
+    def get_context_data(self, **kwargs: Any) -> dict:
         """Добавляет сообщение о пустом списке сообщений в контекст"""
 
         context = super().get_context_data(**kwargs)
@@ -164,9 +215,15 @@ class MessageCreateView(CreateView):
     form_class = MessageForm
     success_url = reverse_lazy("mailings:message_list")
 
-    def dispatch(self, request, *args, **kwargs):
+    def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponseBase:
         """Запрет доступа менеджерам"""
-        if request.user.is_manager:
+
+        if not self.request.user.is_authenticated:
+            raise PermissionDenied("Доступ запрещен")
+
+        user = self.request.user
+
+        if user.is_manager:
             raise PermissionDenied("Менеджерам запрещено создавать сообщения")
         return super().dispatch(request, *args, **kwargs)
 
@@ -182,7 +239,7 @@ class MessageDetailView(DetailView):
 
     model = Message
 
-    def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any):
+    def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponseBase:
         """Проверка прав доступа пользователя"""
 
         self.object = self.get_object()
@@ -203,7 +260,7 @@ class MessageUpdateView(UpdateView):
         """Для отображения детальной страницы сообщения после её редактирования"""
         return reverse("mailings:message_detail", args=[self.kwargs.get("pk")])
 
-    def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any):
+    def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponseBase:
         """Проверка прав доступа пользователя"""
 
         self.object = self.get_object()
@@ -219,7 +276,7 @@ class MessageDeleteView(DeleteView):
     model = Message
     success_url = reverse_lazy("mailings:message_list")
 
-    def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any):
+    def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponseBase:
         """Проверка прав доступа пользователя"""
 
         self.object = self.get_object()
@@ -234,7 +291,7 @@ class MailingListView(LoginRequiredMixin, ListView):
 
     model = Mailing
 
-    def get_base_queryset(self):
+    def get_base_queryset(self) -> QuerySet:
         """Базовый 'queryset' с обновленными статусами рассылок"""
 
         queryset = super().get_queryset()
@@ -245,17 +302,23 @@ class MailingListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         """Фильтрация по правам доступа"""
 
-        queryset = self.get_base_queryset()
-        if not self.request.user.is_manager:
-            queryset = queryset.filter(owner=self.request.user, is_active=True)
-        return queryset
+        if not self.request.user.is_authenticated:
+            raise PermissionDenied("Доступ запрещен")
 
-    def get_context_data(self,**kwargs) -> dict:
+        mailings_service = DataService()
+        user = self.request.user
+
+        if user.is_manager or user.is_superuser:
+            return mailings_service.get_mailings_from_cache()
+        if not user.is_manager and not user.is_superuser:
+            return mailings_service.get_mailings_from_cache(user=user)
+
+    def get_context_data(self, **kwargs: Any) -> dict:
         """Добавляет сообщение о пустом списке рассылок в контекст"""
 
         context = super().get_context_data(**kwargs)
 
-        if not context["object_list"].exists():
+        if not context["object_list"]:
             context["empty_mailings"] = "У вас пока нет ни одной рассылки"
         return context
 
@@ -267,14 +330,28 @@ class MailingCreateView(LoginRequiredMixin, CreateView):
     form_class = MailingForm
     success_url = reverse_lazy("mailings:mailing_list")
 
-    def get_form(self, form_class=None):
+    # User = get_user_model()
+
+    def get_form(self, form_class: Optional[Type[forms.Form]] = None) -> forms.Form:
+        """"Возвращает форму с фильтрацией полей по правам пользователя"""
+
         form = super().get_form(form_class)
-        if not self.request.user.is_manager:
-            form.fields["recipients"].queryset = Recipient.objects.filter(owner=self.request.user)
-            form.fields["message"].queryset = Message.objects.filter(owner=self.request.user)
+
+        if not self.request.user.is_authenticated:
+            raise PermissionDenied("Доступ запрещен")
+
+        user = self.request.user
+
+        if not user.is_manager:
+            recipients_field = cast(forms.ModelChoiceField, form.fields["recipients"])
+            message_field = cast(forms.ModelChoiceField, form.fields["message"])
+
+            recipients_field.queryset = Recipient.objects.filter(owner_id=user.id)
+            message_field.queryset = Message.objects.filter(owner_id=user.id)
+
         return form
 
-    def form_valid(self, form:MailingForm) -> HttpResponse:
+    def form_valid(self, form: MailingForm) -> HttpResponse:
         """Обработка валидной формы - привязка рассылки к текущему пользователю"""
 
         form.instance.owner = self.request.user
@@ -287,36 +364,29 @@ class MailingDetailView(LoginRequiredMixin, DetailView):
 
     model = Mailing
 
-
-    def post(self, request, *args: Any, **kwargs: Any):
+    def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
         """Обработка отправки рассылки"""
 
         mailing = self.get_object()
         time_now = timezone.now()
 
         is_active = Mailing.objects.filter(
-            models.Q(
-                start_at__lte=time_now,
-                end_at__gte=time_now,
-                status=Mailing.CREATED
-            ) | models.Q(
-                status=Mailing.LAUNCHED,
-                end_at__gte=time_now
-            ),
-        pk=mailing.pk
+            models.Q(start_at__lte=time_now, end_at__gte=time_now, status=Mailing.CREATED)
+            | models.Q(status=Mailing.LAUNCHED, end_at__gte=time_now),
+            pk=mailing.pk,
         ).exists()
 
         if not is_active:
             messages.error(request, "Эта рассылка не активна (неверный статус или даты)")
             logger.warning(request, "Эта рассылка не активна (неверный статус или даты)")
-            return redirect('mailings:mailing_detail', pk=mailing.pk)
+            return redirect("mailings:mailing_detail", pk=mailing.pk)
 
         mailing.send()
         mailing.update_status()
         messages.success(request, f"Рассылка '{mailing.message.title}' отправлена!")
         logger.info(f"Рассылка '{mailing.message.title}' успешно отправлена!")
 
-        return redirect('mailings:mailing_detail', pk=mailing.pk)
+        return redirect("mailings:mailing_detail", pk=mailing.pk)
 
 
 class MailingUpdateView(LoginRequiredMixin, UpdateView):
@@ -330,7 +400,7 @@ class MailingUpdateView(LoginRequiredMixin, UpdateView):
         """Для отображения детальной страницы рассылки после её редактирования"""
         return reverse("mailings:mailing_detail", args=[self.kwargs.get("pk")])
 
-    def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any):
+    def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponseBase:
         """Проверка прав доступа пользователя"""
 
         self.object = self.get_object()
@@ -338,6 +408,25 @@ class MailingUpdateView(LoginRequiredMixin, UpdateView):
         if request.user != self.object.owner:
             raise PermissionDenied("Вы не можете редактировать рассылки")
         return super().dispatch(request, *args, **kwargs)
+
+    def get_form(self, form_class: Optional[Type[forms.Form]] = None) -> forms.Form:
+        """"Возвращает форму с фильтрацией полей по правам пользователя"""
+
+        form = super().get_form(form_class)
+
+        if not self.request.user.is_authenticated:
+            raise PermissionDenied("Доступ запрещен")
+
+        user = self.request.user
+
+        if not user.is_manager:
+            recipients_field = cast(forms.ModelChoiceField, form.fields["recipients"])
+            message_field = cast(forms.ModelChoiceField, form.fields["message"])
+
+            recipients_field.queryset = Recipient.objects.filter(owner_id=user.id)
+            message_field.queryset = Message.objects.filter(owner_id=user.id)
+
+        return form
 
     def get_form_class(self) -> Type[forms.BaseForm]:
         """Возвращает класс формы в зависимости от прав пользователя"""
@@ -356,7 +445,7 @@ class MailingDeleteView(LoginRequiredMixin, DeleteView):
     model = Mailing
     success_url = reverse_lazy("mailings:mailing_list")
 
-    def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any):
+    def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponseBase:
         """Проверка прав доступа пользователя"""
 
         self.object = self.get_object()
@@ -373,29 +462,38 @@ class MailingAttemptListView(LoginRequiredMixin, ListView):
     paginate_by = 10
     ordering = ["-datetime_attempt", "pk"]
 
-
     def get_queryset(self) -> QuerySet:
         """Фильтрация попыток рассылки в зависимости от прав пользователя"""
 
         queryset = super().get_queryset()
 
-        if not self.request.user.is_manager:
+        if not self.request.user.is_authenticated:
+            raise PermissionDenied("Доступ запрещен")
+
+        user = self.request.user
+
+        if not user.is_manager:
             user_mailings = Mailing.objects.filter(owner=self.request.user)
             queryset = queryset.filter(mailing__in=user_mailings)
             return queryset.order_by("-datetime_attempt", "pk")
         raise PermissionDenied("Менеджеры не могут просматривать список попыток рассылок")
 
-    def get_context_data(self, **kwargs) -> dict:
+    def get_context_data(self, **kwargs: Any) -> Dict[str, Any]:
         """Добавляет в контекст общее количество попыток в зависимости
         от прав доступа. Добавляет в контекст соответствующее сообщение
         при отсутствии попыток рассылок"""
 
         context = super().get_context_data(**kwargs)
 
+        if not isinstance(self.request.user, User):
+            raise PermissionDenied("Доступ запрещен")
+
+        user = self.request.user
+
         if not context["object_list"].exists():
             context["empty_mailingattempts"] = "У вас пока нет попыток рассылок"
 
-        if self.request.user.is_manager:
+        if user.is_manager:
             context["total_count"] = MailingAttempt.objects.count()
         else:
             user_mailings = Mailing.objects.filter(owner=self.request.user)
@@ -409,12 +507,17 @@ class MailingAttemptDetailView(LoginRequiredMixin, DetailView):
 
     model = MailingAttempt
 
-    def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any):
+    def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponseBase:
         """Проверка прав доступа пользователя"""
 
         self.object = self.get_object()
 
-        if self.request.user.is_manager:
+        if not request.user.is_authenticated:
+            raise PermissionDenied("Необходима авторизация")
+
+        user = request.user
+
+        if user.is_manager:
             raise PermissionDenied("Менеджеры не могут смотреть детальную информацию о попытках рассылок")
         return super().dispatch(request, *args, **kwargs)
 
@@ -425,24 +528,32 @@ class MailingAttemptDeleteView(LoginRequiredMixin, DeleteView):
     model = MailingAttempt
     success_url = reverse_lazy("mailings:mailingattempt_list")
 
-    def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any):
+    def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponseBase:
         """Проверка прав доступа пользователя"""
 
         self.object = self.get_object()
 
-        if self.request.user.is_manager:
+        if not request.user.is_authenticated:
+            raise PermissionDenied("Необходима авторизация")
+
+        user = request.user
+
+        if user.is_manager:
             raise PermissionDenied("Менеджеры не могут удалять рассылки")
         return super().dispatch(request, *args, **kwargs)
 
 
 @require_POST
-def run_mailing_command(request):
+def run_mailing_command(request: HttpRequest) -> HttpResponse:
     """Вызов команды и отправка рассылок"""
 
     if request.method == "POST":
         try:
-            call_command("send_mailings")
-            messages.success(request, "Рассылка успешно отправлена!")
+            result = call_command("send_mailings")
+            if result == "no_active_mailings":
+                messages.info(request, "Нет активных рассылок!")
+            else:
+                messages.success(request, "Рассылка успешно отправлена!")
         except Exception as e:
             messages.error(request, f"Ошибка: {str(e)}")
     return redirect(request.POST.get("next", "/"))
@@ -450,15 +561,26 @@ def run_mailing_command(request):
 
 class HomeView(View):
     """Класс для отображения главной страницы"""
+
     template_name = "home.html"
 
-    def get(self, request, *args: Any, **kwargs: Any):
+    def get(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
         """Получение контекста для отображения на главной странице"""
 
         stats_service = StatisticsService()
-        context = stats_service.get_manager_stats() if request.user.is_manager else stats_service.get_user_stats(
-            request.user)
+
+        if not self.request.user.is_authenticated:
+            raise PermissionDenied("Доступ запрещен")
+
+        user = self.request.user
+
+        context = (
+            stats_service.get_manager_stats()
+            if user.is_manager
+            else stats_service.get_user_stats(user)
+        )
         return render(request, "mailings/home.html", context)
+
 
 class StartView(TemplateView):
     """Класс для отображения стартовой страницы"""
@@ -467,7 +589,7 @@ class StartView(TemplateView):
     success_url = reverse_lazy("mailings:start")
     context_object_name = "results"
 
-    def get_context_data(self, **kwargs) -> dict:
+    def get_context_data(self, **kwargs: Any) -> dict:
         """Добавляет в контекст приветственное сообщение"""
 
         context = super().get_context_data(**kwargs)
@@ -483,68 +605,65 @@ class SearchView(ListView):
     paginate_by = 10
     context_object_name = "results"
 
-    def get_queryset(self):
+    # @method_decorator(cache_page(60 * 5), name='dispatch')
+    def get_queryset(self) -> QuerySet | list:   # type: ignore[override]
         """Поиск контекста"""
 
-        query = self.request.GET.get('q', '').strip()
+        query = self.request.GET.get("q", "").strip()
         if not query:
             return []
-        user = self.request.user
-        results = []
+
+        request = cast(HttpRequest, self.request)
+        user = cast(User, request.user)
+
+        if not user.is_authenticated:
+            return[]
+
+        results: List[Union['Recipient', 'Message', 'Mailing', 'MailingAttempt']] = []
 
         # 1. Поиск получателей
-        recipients = Recipient.objects.filter(
-            Q(email__icontains=query) |
-            Q(fullname__icontains=query)
-        )
+        recipients = Recipient.objects.filter(Q(email__icontains=query) | Q(fullname__icontains=query))
         if user.is_manager:
             recipients = recipients.all()
             results += list(recipients)
         elif not user.is_manager:
             recipients = recipients.filter(owner=user)
-            results += list(recipients.select_related('owner'))
-
-
+            results += list(recipients.select_related("owner"))
 
         # 2. Поиск сообщений
-        messages = Message.objects.filter(
-            Q(title__icontains=query) |
-            Q(body__icontains=query)
-        )
+        messages = Message.objects.filter(Q(title__icontains=query) | Q(body__icontains=query))
         if not user.is_manager:
             messages = messages.filter(owner=user)
-            results += list(messages.select_related('owner'))
-        results += ""
+            results += list(messages.select_related("owner"))
+        results += []
 
         # 3. Поиск рассылок
         mailings = Mailing.objects.filter(
-            Q(status__icontains=query) |
-            Q(message__title__icontains=query) |
-            Q(owner__email__icontains=query)
+            Q(status__icontains=query) | Q(message__title__icontains=query) | Q(start_at__icontains=query)  | Q(end_at__icontains=query)
         )
         if user.is_manager:
             mailings = mailings.all()
             results += list(mailings)
         elif not user.is_manager:
             mailings = mailings.filter(owner=user)
-            results += list(mailings.select_related('message', 'owner'))
+            results += list(mailings.select_related("message", "owner"))
 
         # 4. Поиск попыток рассылок
         attempts = MailingAttempt.objects.filter(
-            Q(status__icontains=query) |
-            Q(server_response__icontains=query) |
-            Q(mailing__message__title__icontains=query)
+            Q(status__icontains=query)
+            | Q(server_response__icontains=query)
+            | Q(mailing__message__title__icontains=query)
         )
         if not user.is_manager:
             attempts = attempts.filter(mailing__owner=user)
-            results += list(attempts.select_related('mailing', 'mailing__message'))
-        results += ""
+            results += list(attempts.select_related("mailing", "mailing__message"))
+        results += []
 
         return results
 
-    def get_context_data(self, **kwargs) -> dict:
+    def get_context_data(self, **kwargs: Any) -> dict:
         """Добавляет в контекст строку поискового запроса"""
 
         context = super().get_context_data(**kwargs)
-        context['query'] = self.request.GET.get('q', '')
+        context["query"] = self.request.GET.get("q", "")
         return context

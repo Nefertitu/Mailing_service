@@ -14,4 +14,4 @@ class UserAdmin(admin.ModelAdmin):
         "email",
         "phone_number",
     )
-    list_editable = ('is_manager',)
+    list_editable = ("is_manager",)

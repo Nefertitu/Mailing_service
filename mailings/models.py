@@ -1,15 +1,16 @@
-import os
 import logging
-from typing import Any
+import os
+from datetime import timedelta, datetime
+from typing import Any, Optional, Dict, Union, List, cast
 
 from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
 from django.db import models
+from django.http import HttpRequest
 from django.utils import timezone
-from datetime import timedelta, datetime
+from mypy.dmypy.client import request
 
 from user.models import User
-
 
 logger = logging.getLogger("mailings")
 
@@ -31,10 +32,7 @@ class Recipient(models.Model):
         null=True,
     )
     owner = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name="recipients",
-        help_text="Владелец(Пользователь)"
+        User, on_delete=models.CASCADE, related_name="recipients", help_text="Владелец(Пользователь)"
     )
     comment = models.TextField(
         verbose_name="Описание",
@@ -51,15 +49,17 @@ class Recipient(models.Model):
         verbose_name_plural = "получатели"
         ordering = ["email"]
 
-    def get_recipients_display(self, user=None) -> str:
+    @staticmethod
+    def get_recipients_display(user: Optional["User"] = None) -> str:
         """Возвращает отформатированную строку получателей с учетом прав доступа"""
 
         recipients = Recipient.objects.all()
 
         if user and not user.is_manager:
             recipients = recipients.filter(owner=user)
+        recipients = recipients
 
-        return ", ".join(recipients.values_list('email', flat=True))
+        return ", ".join(recipients.values_list("email", flat=True))
 
 
 class Message(models.Model):
@@ -72,14 +72,9 @@ class Message(models.Model):
     )
     body = models.TextField(
         verbose_name="Тело письма",
-        blank=True,
-        null=True,
     )
     owner = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name="created_messages",
-        help_text="Владелец(Пользователь)"
+        User, on_delete=models.CASCADE, related_name="created_messages", help_text="Владелец(Пользователь)"
     )
 
     def __str__(self) -> str:
@@ -91,6 +86,18 @@ class Message(models.Model):
         verbose_name_plural = "сообщения"
         ordering = ["title"]
 
+    @staticmethod
+    def get_messages_display(user: Optional["User"] = None) -> str:
+        """Возвращает отформатированную строку получателей с учетом прав доступа"""
+
+        messages = Message.objects.all()
+
+        if user and not user.is_manager:
+            messages = messages.filter(owner=user)
+        messages = messages
+
+        return ", ".join(messages.values_list("title", flat=True))
+
 
 class Mailing(models.Model):
     """Модель рассылки"""
@@ -98,11 +105,11 @@ class Mailing(models.Model):
     CREATED = "Создана"
     LAUNCHED = "Запущена"
     COMPLETED = "Завершена"
-    
+
     DAILY = "Ежедневно"
     WEEKLY = "Еженедельно"
     MONTHLY = "Ежемесячно"
-    
+
     STATUS_CHOICES = [
         (CREATED, "Создана"),
         (LAUNCHED, "Запущена"),
@@ -117,7 +124,7 @@ class Mailing(models.Model):
         verbose_name="Дата и время окончания отправки",
         blank=True,
         null=True,
-        help_text="Выберите дату и время завершения рассылки"
+        help_text="Выберите дату и время завершения рассылки",
     )
     status = models.CharField(
         max_length=50,
@@ -132,20 +139,17 @@ class Mailing(models.Model):
         related_name="mailings",
     )
     recipients = models.ManyToManyField(
-        "Recipient",
+        Recipient,
         related_name="received_mailings",
         symmetrical=False,
         verbose_name="Получатели рассылки",
     )
     owner = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name="created_mailings",
-        help_text="Владелец(Пользователь)"
+        User, on_delete=models.CASCADE, related_name="created_mailings", help_text="Владелец(Пользователь)"
     )
     is_periodic = models.BooleanField(
         default=False,
-        verbose_name='Периодическая рассылка',
+        verbose_name="Периодическая рассылка",
         null=True,
         blank=True,
     )
@@ -163,19 +167,21 @@ class Mailing(models.Model):
     next_run = models.DateTimeField(
         blank=True,
         null=True,
-        verbose_name='Следующий запуск',
+        verbose_name="Следующий запуск",
     )
     is_active = models.BooleanField(
         verbose_name="Рассылка активна ('Да/Нет')",
         default=True,
         null=True,
         blank=True,
-        help_text="Отключение рассылки. Выберите нужный вариант"
+        help_text="Отключение рассылки. Выберите нужный вариант",
     )
 
     def __str__(self) -> str:
         """Строковое отображение рассылки"""
-        return f"Рассылка сообщения '{self.message.title}': ({'Периодическая' if self.is_periodic else 'Одномоментная'})"
+        return (
+            f"Рассылка сообщения '{self.message.title}': ({'Периодическая' if self.is_periodic else 'Одномоментная'})"
+        )
 
     class Meta:
         verbose_name = "рассылка"
@@ -186,15 +192,11 @@ class Mailing(models.Model):
             ("can_disable_mailings", "Can disable mailings"),
         ]
 
-    def get_recipients_display(self, user=None) -> str:
-        """Возвращает отформатированную строку получателей с учетом прав доступа"""
+    def get_recipients_display(self) -> str:
+        """Возвращает строку с 'email' получателей текущей рассылки"""
 
-        recipients = self.recipients.all()
-
-        if user and not user.is_manager:
-            recipients = recipients.filter(owner=user)
-
-        return ", ".join(recipients.values_list('email', flat=True))
+        emails = self.recipients.values_list("email", flat=True)
+        return ", ".join(emails)
 
     def get_message_title(self) -> str:
         """Возвращает заголовок сообщения"""
@@ -203,24 +205,32 @@ class Mailing(models.Model):
     def prepare_for_sending(self) -> bool:
         """Подготовка рассылки к отправке (обновление статуса)"""
 
+        now = timezone.now()
+
         if self.status == self.COMPLETED:
+            return False
+
+        if self.end_at and self.end_at <= now:
+            self.status = self.COMPLETED
+            logger.info(f"Рассылка {self.pk} переведена в статус 'Завершена'")
+            self.save()
             return False
 
         if self.status == self.CREATED:
             self.status = self.LAUNCHED
-            logger.info(f"Рассылка {self.pk} переведена в статус LAUNCHED")
+            logger.info(f"Рассылка {self.pk} переведена в статус 'Запущена'")
             self.start_at = timezone.now()
             self.save()
 
         return True
 
-    def send_emails(self) -> dict:
+    def send_emails(self) -> Dict[str, Union[int, List[str]]]:
         """Отправка писем"""
 
-        results = {
+        results: Dict[str, Union[int, List[str]]] = {
             "total": self.recipients.count(),
-            "success": 0,
-            "errors": [],
+            "success": 0,    # int
+            "errors": [],    # List[str]
         }
         recipients = self.recipients.all()
         message = self.message
@@ -235,23 +245,27 @@ class Mailing(models.Model):
                     message=message.body,
                     from_email=os.getenv("EMAIL_HOST_USER"),
                     recipient_list=[recipient.email],
-                    fail_silently=False
+                    fail_silently=False,
                 )
                 logger.info(f"Успешно отправлено письмо на {recipient.email}")
                 MailingAttempt.objects.create(
                     mailing=self,
                     status=MailingAttempt.SUCCESSFULLY,
-                    server_response=f"Успешно отправлено: {recipient.email}"
+                    server_response=f"Успешно отправлено: {recipient.email}",
                 )
-                results["success"] += 1
+                success = results["success"]
+                if isinstance(success, int):
+                    success += 1
             except Exception as e:
                 MailingAttempt.objects.create(
                     mailing=self,
                     status=MailingAttempt.UNSUCCESSFUL,
-                    server_response=f"Ошибка при отправке {recipient.email}: {str(e)}"
+                    server_response=f"Ошибка при отправке {recipient.email}: {str(e)}",
                 )
                 logger.error(f"Ошибка отправки: {str(e)}", exc_info=True)
-                results["errors"].append(str(e))
+                errors = results["errors"]
+                if isinstance(errors, list):
+                    errors.append(str(e))
                 raise
 
         return results
@@ -272,16 +286,22 @@ class Mailing(models.Model):
 
         now = timezone.now()
 
-        if not self.is_periodic and self.status == self.LAUNCHED and self.end_at and self.end_at <= now:
-            self.status = self.COMPLETED
-            self.is_active = False
-            return True
+        if not self.is_periodic:
+            if self.end_at and self.end_at <= now:
+                self.status = self.COMPLETED
+                self.is_active = False
+                return True
+            return False
 
-        if self.next_run and self.next_run <= now:
+        if self.next_run is not None and self.next_run <= now:
             self.schedule_next_run()
             return True
 
-        if self.is_periodic and self.end_at <= now:
+        end_at = cast(Optional[datetime], self.end_at)
+        if (self.is_periodic
+                and end_at
+                and end_at <= now
+                and self.status != self.COMPLETED):
             self.status = self.COMPLETED
             self.is_active = False
             return True
@@ -291,18 +311,32 @@ class Mailing(models.Model):
     def save(self, *args: Any, **kwargs: Any) -> None:
         """Переопределённый метод сохранения с проверкой статуса"""
 
-        needs_save = self.update_status()
+        # old_status = self.status
+        # now = timezone.now()
+        #
+        # if self.end_at and self.end_at <= now:
+        #     self.status = self.COMPLETED
+        #     self.is_active = False
+        #     status_updated = True
+        # else:
+        #     status_updated = self.update_status()
+        # if status_updated:
+        #     print(f"Статус рассылки {self.pk} изменён: {old_status} → {self.status}")
+        #     kwargs['update_fields'] = ['status', 'is_active', *kwargs.get('update_fields', [])]
+        #     kwargs['force_update'] = True
+        self.update_status()
         super().save(*args, **kwargs)
 
-        if needs_save and self.is_periodic:
-            super().save(update_fields=["is_active", "status", "next_run"])
+        # if status_updated:
+        #     from .services import clear_mailing_cache
+        #     clear_mailing_cache()
 
     def clean(self) -> None:
         """Валидация перед сохранением"""
         if self.is_periodic and not self.period:
             raise ValidationError("Для периодической рассылки должен быть указан период")
 
-    def schedule_next_run(self):
+    def schedule_next_run(self) -> None:
         """Вычисление следующего времени запуска для периодических рассылок"""
 
         if self.is_periodic and self.period:
@@ -315,26 +349,33 @@ class Mailing(models.Model):
                 self.next_run = now + timedelta(days=30)
             self.save()
 
-    def get_periodic_display(self):
-        """Отображение информации о рассылкe"""
+    def get_periodic_display(self) -> str:
+        """Отображение информации о рассылке"""
         return "Рассылка по расписанию" if self.is_periodic else ""
 
-    def get_period_display(self) -> str:
+    def get_custom_period_display(self) -> str:    # type: ignore[empty-body]
         """Отображение информации о периоде рассылки"""
+
+        if not self.period:
+            return ""
         return dict(self.PERIOD_CHOICES).get(self.period, self.period or "")
 
-
     @property
-    def schedule_details(self):
+    def schedule_details(self) -> Dict[str, Any]:
         """Возвращает детализированную информацию о расписании в виде словаря"""
 
-        if self.is_periodic:
-            return {
-                'is_periodic': self.is_periodic,
-                'period': self.get_period_display() if self.period else None,
-                'next_run': self.next_run.strftime('%d.%m.%Y %H:%M') if self.next_run else None,
-                # 'last_attempt': self.attempts.order_by('-datetime_attempt').first()
+        result: Dict[str, Any]  = {
+            "is_periodic": self.is_periodic,
+            "period": None,
+            "next_run": None
         }
+
+        if self.is_periodic:
+            result.update({
+                "period": self.get_custom_period_display() if self.period else None,
+                "next_run": self.next_run.strftime("%d.%m.%Y %H:%M") if self.next_run else None,
+            })
+        return result
 
 
 class MailingAttempt(models.Model):
@@ -350,7 +391,7 @@ class MailingAttempt(models.Model):
 
     datetime_attempt = models.DateTimeField(
         verbose_name="Дата и время попытки",
-       auto_now_add=True,
+        auto_now_add=True,
     )
     status = models.CharField(
         max_length=50,
@@ -359,10 +400,7 @@ class MailingAttempt(models.Model):
         default=None,
     )
     server_response = models.TextField(
-        verbose_name="Ответ почтового сервера",
-        blank=True,
-        null=True,
-        help_text="Ответ почтового сервера на отправку"
+        verbose_name="Ответ почтового сервера", blank=True, null=True, help_text="Ответ почтового сервера на отправку"
     )
     mailing = models.ForeignKey(
         Mailing,
@@ -370,10 +408,10 @@ class MailingAttempt(models.Model):
         null=False,
         related_name="attempts",
         verbose_name="Рассылка",
-        help_text="Связанная рассылка"
+        help_text="Связанная рассылка",
     )
 
-    def __str__(self)  -> str:
+    def __str__(self) -> str:
         """Строковое отображение попытки рассылки"""
         return f"Попытка рассылки #{self.pk} ({self.mailing.message.title})"
 
@@ -385,4 +423,3 @@ class MailingAttempt(models.Model):
     def get_message_title(self) -> str:
         """Возвращает строку с темой сообщения"""
         return self.mailing.message.title
-
