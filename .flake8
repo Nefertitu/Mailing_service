@@ -1,4 +1,13 @@
-[tool.flake8]
+[flake8]
+exclude =
+    .venv,
+    venv,
+    .git,
+    __pycache__,
+    *.min.js,
+    *.min.css,
+    build,
+    dist,
+    migrations
+ignore = E501,E503,W503,F401
 max-line-length = 119
-ignore = "E503, E121, E122, E501"
-exclude = ".git, __pycache__, .venv\, migrations"

@@ -1,0 +1,79 @@
+{% extends 'mailings/base.html' %}
+
+{% block content %}
+<h5 class="text-start ps-5">Карточка данных рассылки</h5>
+<div class="album py-4 bg-body-tertiary">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card shadow-sm border-end-3 border-bottom-3 border-info border-start-0 border-top-0">
+                    <div class="card-body">
+                        <table class="table">
+                            <thead>
+                            <tr class="border-top border-primary border-bottom">
+                                <th class="table-primary sticky-top border-0 ">Наименование</th>
+                                <th class="table-primary sticky-top border-0">Содержание</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr class="border-top border-bottom border-grey">
+                                <td class="border-0">Заголовок сообщения рассылки</td>
+                                <td class="border-0">{{ object.message }}</td>
+                            </tr>
+                            <tr class="border-top border-bottom border-grey">
+                                <td class="border-0">Периодичность рассылки</td>
+                                <td class="border-0">{{ object.is_periodic|yesno:"По расписанию,Не периодическая" }}</td>
+                            </tr>
+                            {% if object.is_periodic %}
+                            <tr class="border-top border-bottom border-grey">
+                                <td class="border-0">Период</td>
+                                <td class="border-0">{{ object.get_period_display }}</td>
+                            </tr>
+                            {% endif %}
+                            <tr class="border-top border-bottom border-grey">
+                                <td class="border-0">Текст сообщения рассылки</td>
+                                <td class="border-0">{{ object.message.body }}</td>
+                            </tr>
+                            <tr class="border-top border-bottom border-grey">
+                                <td class="border-0">Статус рассылки</td>
+                                <td class="border-0">{{ object.status }}</td>
+                            </tr>
+                            <tr class="border-top border-bottom border-grey">
+                                <td class="border-0">Дата и время первой отправки</td>
+                                <td class="border-0">{{ object.start_at|date:"d.m.Y (H:i)" }}</td>
+                            </tr>
+                            <tr class="border-top border-bottom border-grey">
+                                <td class="border-0">Дата и время окончания отправки</td>
+                                <td class="border-0">{{ object.end_at|date:"d.m.Y (H:i)" }}</td>
+                            </tr>
+                            <tr class="border-top border-bottom border-grey">
+                                <td class="border-0">Получатели рассылки</td>
+                                <td class="border-0">{{ object.get_recipients_display }}</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="btn-group">
+                                <a class="p-2 btn btn-outline-success" href="{% url 'mailings:mailing_list' %}">Вернуться</a>
+                                {% if not user.is_manager %}
+                                <a class="p-2 btn btn-outline-primary"
+                                   href="{% url 'mailings:mailing_update' object.pk %}">Редактировать</a>
+                                <a class="p-2 btn btn-outline-secondary"
+                                   href="{% url 'mailings:mailing_confirm_delete' object.pk %}">Удалить</a>
+                                <form method="post" action="{% url 'mailings:mailing_detail' mailing.pk %}">
+                                    {% csrf_token %}
+                                    {% if not object.is_periodic %}
+                                    <input type="hidden" name="next" value="{{ request.path }}">
+                                    <button type="submit" class="p-2 btn btn-outline-info">Отправить сейчас</button>
+                                    {% endif %}
+                                </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

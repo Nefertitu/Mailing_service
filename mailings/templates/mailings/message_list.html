@@ -1,0 +1,37 @@
+{% extends 'mailings/base.html' %}
+
+{% block content %}
+<h5 class="text-center mb-4">Список сообщений</h5>
+<a href="{% url 'mailings:message_form' %}" class="btn btn-primary ms-4">Создать новое сообщение</a>
+<div class="album py-4 bg-body-tertiary">
+    {% if empty_messages %}
+    <div class="alert alert-info">
+      {{ empty_messages }}
+    </div>
+  {% else %}
+    <div class="container-fluid px-4">
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-auto">
+            {% for object in object_list %}
+            <div class="col" style="min-card-width: 350px; height: 250px;">
+                <div class="card shadow-sm h-100 border-end-3 border-bottom-3 border-info border-start-0 border-top-0">
+                    <div class="card-body d-flex flex-column">
+                        <p class="card-text mt-3 mb-3 fw-bold text-success">Тема письма: {{ object.title }}</p>
+                        <p class="card-text mt-3 mb-3">Текст письма: {{ object.body|truncatechars:100 }}</p>
+                        <div class="d-flex justify-content-between mt-auto">
+                            <a class="p-2 btn btn-outline-secondary" href="{% url 'mailings:message_confirm_delete' object.pk %}">Удалить</a>
+                            <a class="p-2 btn btn-outline-success" href="{% url 'mailings:message_detail' object.pk %}">Посмотреть</a>
+                            <a class="p-2 btn btn-outline-primary" href="{% url 'mailings:message_update' object.pk %}">Редактировать</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if is_paginated and page_obj.paginator.num_pages > 1 %}
+{% include 'mailings/includes/pagination.html' %}
+{% endif %}
+{% endblock %}
