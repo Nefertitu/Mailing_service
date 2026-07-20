@@ -1,0 +1,98 @@
+{% extends 'mailings/base.html' %}
+{% load model_tags %}
+{% block content %}
+
+<div class="container mt-4">
+    <h4>Результаты поиска: "{{ query }}"</h4>
+    {% if results %}
+
+    {% with recipients=results|select_model_type:"Recipient" %}
+    {% if recipients %}
+    <div class="mb-4">
+        <h3><a class="nav-link" href="{% url 'mailings:recipient_list' %}">Получатели</a></h3>
+        <div class="list-group">
+            {% for item in recipients%}
+            <div class="list-group-item">
+                <h6>{{ item.fullname }}</h6>
+                <p>Email: {{ item.email }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    {% endwith %}
+
+
+    {% with messages=results|select_model_type:"Message" %}
+    {% if messages %}
+
+    <div class="mb-4">
+        <h3><a class="nav-link" href="{% url 'mailings:message_list' %}">Сообщения</a></h3>
+        <div class="list-group">
+            {% for item in messages %}
+            <div class="list-group-item">
+                <h6>{{ item.title }}</h6>
+                <p>{{ item.body|truncatechars:100 }}</p>
+            </div>
+
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    {% with mailings=results|select_model_type:"Mailing" %}
+    {% if mailings %}
+    <div class="mb-4">
+        <h3><a class="nav-link" href="{% url 'mailings:mailing_list' %}">Рассылки</a></h3>
+        <div class="list-group">
+            {% for item in mailings %}
+            <div class="list-group-item">
+                <h6>Рассылка #{{ item.id }}</h6>
+                <p>
+                    Сообщение: {{ item.message.title }}<br>
+                    Статус: {{ item.get_status_display }}<br>
+                    Владелец: {{ item.owner}}<br>
+                    Дата и время первой отправки: {{ item.start_at }}<br>
+                    Дата и время первой отправки: {{ item.end_at }}<br>
+                </p>
+            </div>
+
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    {% with mailingattempts=results|select_model_type:"MailingAttempt" %}
+    {% if mailingattempts %}
+    <div class="mb-4">
+        <h3><a class="nav-link" href="{% url 'mailings:mailingattempt_list' %}">Попытки рассылок</a></h3>
+        <div class="list-group">
+            {% for item in mailingattempts %}
+            <div class="list-group-item">
+                <h6>Попытка #{{ item.id }}</h6>
+                <p>
+                    Рассылка: {{ item.mailing.message.title }}<br>
+                    Дата: {{ item.datetime_attempt }}<br>
+                    Статус: {{ item.get_status_display }}
+                </p>
+            </div>
+
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    {% else %}
+    <div class="alert alert-info">
+        Ничего не найдено в доступном контенте по запросу "{{ query }}"
+    </div>
+    {% endif %}
+</div>
+
+{% if is_paginated and page_obj.paginator.num_pages > 1 %}
+{% include 'mailings/includes/pagination.html' %}
+{% endif %}
+{% endblock %}

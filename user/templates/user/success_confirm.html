@@ -1,0 +1,18 @@
+{% extends 'mailings/base.html' %}
+
+{% block content %}
+<div class="container-fluid px-1 text-center mb-5">
+    <h4 class="mb-5">Ваш email ({{ email }}) подтвержден!</h4>
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4 justify-content-center mb-5">
+        <div class="col">
+            <div class="card shadow-sm h-100 border-end-3 border-bottom-3 border-info border-start-0 border-top-0">
+                <div class="card-body d-flex flex-column justify-content-center align-items-center p-4">
+                    <h5 class="mb-2 mt-3 fst-italic fw-normal">Теперь Вы можете войти в свой аккаунт</h5>
+                        <p class="mb-5 fst-italic fw-normal mt-3">Перейти на страницу входа:</p>
+                    <a href="{% url 'user:login' %}" class="btn btn-primary mb-3">Перейти</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

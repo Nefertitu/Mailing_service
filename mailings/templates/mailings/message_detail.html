@@ -1,0 +1,30 @@
+{%extends 'mailings/base.html' %}
+
+{% block content %}
+<h5 class="text-start ps-5">Карточка сообщения</h5>
+<div class="album py-5 bg-body-tertiary">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card shadow-sm ms-3 border-end-3 border-bottom-3 border-info border-start-0 border-top-0">
+                    <div class="card-body">
+                        <p class="card-text">Заголовок сообщения: {{ object.title }}</p>
+                        <p class="card-text">Текст сообщения: {{ object.body }}</p>
+                        <br>
+                        <br>
+                        <div class="d-flex justify-content-between align-items-end">
+                            <div class="btn-group">
+                                <a class="p-2 btn btn-outline-success" href="{% url 'mailings:message_list' %}">Назад</a>
+                                <a class="p-2 btn btn-outline-primary"
+                                   href="{% url 'mailings:message_update' object.pk %}">Редактировать</a>
+                                <a class="p-2 btn btn-outline-secondary"
+                                   href="{% url 'mailings:message_confirm_delete' object.pk %}">Удалить</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

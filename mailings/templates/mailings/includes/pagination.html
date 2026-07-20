@@ -1,0 +1,14 @@
+<div class="d-flex justify-content-end mt-5">
+    <div class="btn-group">
+        {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-primary"><-Назад</a>
+        {% else %}
+        <span class="btn btn-secondary"><-Назад</span>
+        {% endif %}
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}" class="btn btn-primary">Вперед-></a>
+        {% else %}
+        <span class="btn btn-secondary">Вперед-></span>
+        {% endif %}
+    </div>
+</div>
