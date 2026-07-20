@@ -1,0 +1,69 @@
+{% extends 'mailings/base.html' %}
+
+{% block content %}
+{% if user.is_authenticated and request.user.is_manager %}
+<h5 class="text-center mb-4">Полный список пользователей</h5>
+<div class="album py-2 bg-body-tertiary">
+    <div class="container">
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
+            <table class="table">
+                <thead>
+                <tr class="border-top border-primary border-bottom">
+                    <th class="table-primary sticky-top border-0 ps-3">Email пользователя</th>
+                    <th class="table-primary sticky-top border-0">Имя</th>
+                    <th class="table-primary sticky-top border-0">Фамилия</th>
+                    <th class="table-primary sticky-top border-0">Телефон</th>
+
+                    <th class="table-primary sticky-top border-0">Блокировка</th>
+                    <th class="table-primary sticky-top border-0">Статус (is_active: ✅/❌)</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for object in object_list %}
+                <tr class="border-top border-bottom border-success">
+                    <td class="border-0 ps-3" style="vertical-align: bottom">{{ object.email }}</td>
+                    <td class="border-0" style="vertical-align: bottom">{{ object.firstname|title }}</td>
+                    <td class="border-0" style="vertical-align: bottom">{{ object.Lastname|title }}</td>
+                    <td class="border-0" style="vertical-align: bottom">{{ object.phone_number|default:"" }}</td>
+                    <td>
+
+                           <div class="card-body">
+
+                                {% if not object.is_superuser and not object.is_manager %}
+                               {% if object.pk %}
+                             <a href="{% url 'user:user_update' object.pk %}" class="btn btn-primary ps-2">
+                                 {% else %}
+                                  <span class="text-danger">Ошибка: нет ID</span>
+                                 {% endif %}
+                        {% if object.is_active %}
+                        Заблокировать
+                        {% else %}
+                        Разблокировать
+                        {% endif %}
+                   </a>
+                               {% endif %}
+                </div>
+                    </td>
+                    <td class="border-0">{{ object.is_active|yesno:"✅,❌" }}</td>
+                </tr>
+                <div class="d-flex justify-content-between align-items-center">
+                </div>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% if empty_users %}
+<div class="alert alert-info">
+    {{ empty_users }}
+</div>
+{% endif %}
+
+{% if is_paginated and page_obj.paginator.num_pages > 1 %}
+{% include 'mailings/includes/pagination.html' %}
+{% endif %}
+{% endif %}
+{% endblock %}
+

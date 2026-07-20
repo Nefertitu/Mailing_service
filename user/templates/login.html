@@ -1,0 +1,23 @@
+{% extends 'mailings/base.html' %}
+{% block content %}
+<p class="fs-6 text-center">Авторизуйтесь или пройдите регистрацию.</p>
+
+<div class="container">
+    <form class="row justify-content-center" method="post" enctype="multipart/form-data">
+        <div class="col-lg-6 col-md-6 col-sm-12 text-start mb-3 mt-3">
+            <div class="card mb-4 box-shadow p-2">
+                <div class="card-body">
+                    {% csrf_token %}
+                    {{ form.non_field_errors }}
+                    {{ form.as_p }}
+                    <button type="submit" class="mt-3 mb-3 btn btn-primary">
+                       Вход
+                    </button>
+                    <a class="mt-3 mb-3 p-2 btn btn-success" href="{% url 'mailings:start' %}">Отмена</a>
+                    <p><a href="{% url 'user:password_reset_custom' %}">Забыли пароль</a></p>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

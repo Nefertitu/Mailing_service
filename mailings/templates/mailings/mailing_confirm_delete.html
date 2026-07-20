@@ -1,0 +1,28 @@
+{% extends 'mailings/base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="row text-start">
+        <div class="col-lg-6 col-md-6 col-sm-12">
+            <form class="row" method="post" enctype="multipart/form-data">
+                <div class="card mb-3 box-shadow">
+                    <h5 class="fw-light mt-3 mb-2 text-center text-danger">Удаление рассылки:</h5>
+                    <h6 class="card-text mb-5 mt-5 ms-2">Действительно хотите удалить рассылку?</h6>
+                    <p class="ms-2">Тема рассылки: '{{ object.message}}'</p>
+                    <div class="card-body ">
+                        {% csrf_token %}
+                        <div class="btn-group mb-3">
+                            <button type="submit" class="p-2 btn btn-outline-danger"
+                                    href="{% url 'mailings:mailing_list' %}">Удалить рассылку
+                            </button>
+                            <a class="p-2 btn btn-outline-success"
+                               href="{% url 'mailings:mailing_list' %}">Отменить</a>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

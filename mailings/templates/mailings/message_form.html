@@ -1,0 +1,31 @@
+{% extends 'mailings/base.html' %}
+{% block content %}
+
+<div class="container">
+    <form class="row" method="post" enctype="multipart/form-data">
+        <div class="col-lg-6 col-md-6 col-sm-12">
+            <div class="card mb-4 box-shadow border-end-3 border-bottom-3 border-info border-start-0 border-top-0">
+                {% if object %}
+                <h5 class="fw-light mt-3 mb-2 text-center">Редактировать сообщение:</h5>
+                <p class="fw-light mb-2 text-center">{{ object.title }}</p>
+                {% else %}
+                <h5 class="ffw-light mt-3 mb-2 text-center">Добавить сообщение</h5>
+                {% endif %}
+                <div class="card-body">
+                    {% csrf_token %}
+                    {{ form.non_field_errors }}
+                    {{ form.as_p }}
+                    <button type="submit" class="btn btn-primary">
+                        {% if object %}
+                        Сохранить изменения
+                        {% else %}
+                        Добавить сообщение
+                        {% endif %}
+                    </button>
+                    <a class="p-2 btn btn-success" href="{% url 'mailings:message_list' %}">Отменить</a>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

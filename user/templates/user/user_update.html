@@ -1,0 +1,36 @@
+{% extends 'mailings/base.html' %}
+{% block content %}
+{% if user.is_authenticated %}
+<div class="container">
+    <form class="row" method="post" enctype="multipart/form-data">
+        <div class="col-lg-6 col-md-6 col-sm-12">
+            <div class="card mb-4 box-shadow">
+                {% if request.user.is_manager %}
+                <h5 class="fw-light mb-4 ms-3 mt-3">Блокировать пользователя</h5>
+                {% else %}
+                <h2 class="fw-light mb-4">Редактировать профиль</h2>
+                {% endif %}
+                <div class="card-body">
+                    {% csrf_token %}
+                    {{ form.non_field_errors }}
+                    {{ form.as_p }}
+                    {% if request.user.is_manager %}
+                    <button type="submit" class="btn btn-primary mt-3">
+                        Сохранить изменения
+                    </button>
+                    <a class="p-2 btn btn-success mt-3" href="{% url 'user:user_list' %}">Отменить</a>
+                    {% else %}
+                     <button type="submit" class="btn btn-primary mt-3">
+                        Сохранить изменения
+                    </button>
+                    <a href="{% url 'user:password_change' %}" class="btn btn-danger mt-3">Сменить пароль</a>
+                    <a class="p-2 btn btn-success mt-3" href="{% url 'mailings:home' %}">Отменить</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endif %}
+
+{% endblock %}

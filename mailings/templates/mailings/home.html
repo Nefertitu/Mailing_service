@@ -1,0 +1,69 @@
+{% extends 'mailings/base.html' %}
+
+{% block content %}
+<div class="container">
+    <h4 class="fw-light text-center text-info">Статистика и отчеты</h4>
+    <h5 class="fw-light mb-5 text-center ">Данные по состоянию на текущую дату: {{ datetime_now|date:"d.m.Y года (H:i МСК)" }}</h5>
+    <div class="row justify-content-center">
+        <div class="col-lg-9 col-md-9 col-sm-12">
+            <table class="table">
+                <tbody>
+                <tr class="border-top border-bottom border-grey">
+                    <td>
+                        <h5 class="fw-light mb-3 text-start">1. Общее количество попыток рассылок:</h5>
+                        <div class="progress" role="progressbar" aria-label="Default striped example"
+                             aria-valuenow="{{ attempts_all }}" aria-valuemin="0" aria-valuemax="100">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated"
+                                 style="width: {{ attempts_all }}%">{{ attempts_all }}
+                            </div>
+                        </div>
+                    </td>
+                    <td class="align-bottom text-center">{{ attempts_all }} шт.</td>
+                </tr>
+                <tr class="border-top border-bottom border-grey">
+                    <td>
+                        <h5 class="fw-light mb-3 text-start">2. Kоличество успешных попыток рассылок:</h5>
+
+                        <div class="progress" role="progressbar" aria-label="Animated striped example"
+                             aria-valuenow="{{ attempts_successfully }}" aria-valuemin="0" aria-valuemax="100">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated bg-success"
+                                 style="width: {{ attempts_successfully }}%">{{ attempts_successfully }}
+                            </div>
+                        </div>
+                    </td>
+                    <td class="align-bottom text-center">{{ attempts_successfully }} шт.</td>
+                </tr>
+                <tr class="border-top border-bottom border-grey">
+
+                    <td>
+                        <h5 class="fw-light mb-3 text-start">3. Kоличество уникальных получателей:</h5>
+
+                        <div class="progress" role="progressbar" aria-label="Info striped example"
+                             aria-valuenow="{{ recipients_all }}" aria-valuemin="0" aria-valuemax="100">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated bg-info"
+                                 style="width: {{ recipients_all }}%">{{ recipients_all }}
+                            </div>
+                        </div>
+                    </td>
+                    <td class="align-bottom text-center">{{ recipients_all }} чел.</td>
+                </tr>
+                <tr class="border-top border-bottom border-grey">
+                    <td>
+                        <h5 class="fw-light mb-3 text-start">4. Количество уникальных сообщений:</h5>
+
+                        <div class="progress" role="progressbar" aria-label="Info striped example"
+                             aria-valuenow="{{ messages_all }}" aria-valuemin="0" aria-valuemax="100">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning"
+                                 style="width: {{ messages_all }}%">{{ messages_all }}
+                            </div>
+                        </div>
+                    </td>
+                    <td class="align-bottom text-center">{{ messages_all }} шт.</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

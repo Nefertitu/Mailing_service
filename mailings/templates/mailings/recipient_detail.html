@@ -1,0 +1,48 @@
+{% extends 'mailings/base.html' %}
+
+{% block content %}
+<h5 class="text-start ps-5">Карточка клиента (получателя рассылок)</h5>
+<div class="album py-5 bg-body-tertiary">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card shadow-sm border-end-3 border-bottom-3 border-info border-start-0 border-top-0">
+                    <div class="card-body">
+                        <table class="table">
+                            <thead>
+                            <tr class="border-top border-primary border-bottom">
+                                <th class="table-primary sticky-top border-0 ">Наименование</th>
+                                <th class="table-primary sticky-top border-0">Содержание</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr class="border-top border-bottom border-grey">
+                                <td class="border-0">Ф.И.О. клиента</td>
+                                <td class="border-0">{{ object.fullname|title }}</td>
+                            </tr>
+                            <tr class="border-top border-bottom border-grey">
+                                <td class="border-0">Email клиента</td>
+                                <td class="border-0">{{ object.email|lower }}</td>
+                            </tr>
+                            <tr class="border-top border-bottom border-grey">
+                                <td class="border-0">Комментарий</td>
+                                <td class="border-0">{{ object.comment }}</td>
+                            </tr>
+                            </tbody>
+                             </table>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="btn-group">
+                                    <a class="p-2 btn btn-outline-success" href="{% url 'mailings:recipient_list' %}">Вернуться</a>
+                                    {% if not request.user.is_manager %}
+                                    <a class="p-2 btn btn-outline-primary" href="{% url 'mailings:recipient_update' object.pk %}">Редактировать</a>
+                                    <a class="p-2 btn btn-outline-secondary" href="{% url 'mailings:recipient_confirm_delete' object.pk %}">Удалить</a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
