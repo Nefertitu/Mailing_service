@@ -4,7 +4,7 @@
         <form method="post" action="{% url 'mailings:run_mailing' %}">
             {% csrf_token %}
             <input type="hidden" name="next" value="{{ request.path }}">
-            <button type="submit" class="btn btn-primary me-3">Запустить рассылку</button>
+            <button type="submit" class="btn btn-primary me-3">Запустить рассылки</button>
         </form>
         {% endif %}
         {% if messages %}
